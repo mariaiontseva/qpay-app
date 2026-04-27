@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../design_system/tokens.dart';
@@ -10,11 +11,12 @@ import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
 import '../../../services/formation_state.dart';
 
-/// A-10b · Co-directors. Lives inside [OnboardingShell].
-/// Founder lists their co-directors (name + email). On Continue we send
-/// each one a deep-link invite to install QPay, do their own signup, and
-/// run their own ID verification — ECCTA requires every director to
-/// verify themselves. The IN01 is held until everyone is verified.
+/// A-10b · Co-directors + share split.
+/// Lives inside [OnboardingShell]. Founder picks co-directors and the share
+/// split — IN01 needs the allocation at filing time, so we don't defer it.
+/// Each row has an inline % chip that opens a numeric edit sheet; the
+/// footer shows live total + remaining/over-allocation, and Continue is
+/// only enabled when the total equals exactly 100%.
 class CoDirectorsScreen extends StatelessWidget {
   const CoDirectorsScreen({super.key});
 
@@ -22,15 +24,28 @@ class CoDirectorsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = FormationProvider.of(context);
     final cos = s.coDirectors;
-    final allDirectors = 1 + cos.length;
-    final pct = s.equalSharePercent;
-    final canContinue = cos.isNotEmpty;
+    final total = s.totalSharePercent;
+    final remaining = 100 - total;
+    final canContinue = cos.isNotEmpty && s.sharesValid;
+    final founderName = s.userName.trim().isEmpty ? 'You' : s.userName.trim();
 
     return QInnerScreen(
       bottom: QBottomBar(
-        child: QButton(
-          label: canContinue ? 'Send invites · Continue' : 'Add a co-director',
-          onPressed: canContinue ? () => context.push('/id-scan') : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _TotalRow(total: total, remaining: remaining),
+            const SizedBox(height: QPayTokens.s4),
+            QButton(
+              label: cos.isEmpty
+                  ? 'Add a co-director'
+                  : (s.sharesValid
+                      ? 'Send invites · Continue'
+                      : 'Total must be 100%'),
+              onPressed: canContinue ? () => context.push('/id-scan') : null,
+            ),
+          ],
         ),
       ),
       child: Column(
@@ -39,19 +54,33 @@ class CoDirectorsScreen extends StatelessWidget {
           const QHeader(
             title: 'Who else is\non board?',
             subtitle:
-                "Each co-director will get an email invite to verify their own ID. We can't file IN01 until everyone's verified.",
+                "Each co-director gets an email invite to verify their own ID. We can't file IN01 until everyone's verified.",
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-            child: _FounderRow(name: s.userName, percent: pct),
+            child: _DirectorRow(
+              title: founderName,
+              subtitle: 'You',
+              percent: s.sharePercents.isNotEmpty ? s.sharePercents[0] : 0,
+              isFounder: true,
+              onPercentTap: () => _editPercent(context, s, 0, founderName),
+              onRemove: null,
+            ),
           ),
-          for (final d in cos)
+          for (var i = 0; i < cos.length; i++)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
-              child: _CoRow(
-                director: d,
-                percent: pct,
-                onRemove: () => s.removeCoDirector(d.email),
+              child: _DirectorRow(
+                title: cos[i].name,
+                subtitle: cos[i].email,
+                percent: i + 1 < s.sharePercents.length
+                    ? s.sharePercents[i + 1]
+                    : 0,
+                statusVerified: cos[i].status == 'verified',
+                isFounder: false,
+                onPercentTap: () =>
+                    _editPercent(context, s, i + 1, cos[i].name),
+                onRemove: () => s.removeCoDirector(cos[i].email),
               ),
             ),
           Padding(
@@ -65,10 +94,10 @@ class CoDirectorsScreen extends StatelessWidget {
           ),
           if (cos.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(28, 18, 24, 0),
+              padding: const EdgeInsets.fromLTRB(28, 14, 24, 0),
               child: Text(
-                'Default split: $allDirectors × $pct% — equal shares. '
-                'Customise later from the company dashboard.',
+                'Tap any % to edit. Adding or removing rebalances back to '
+                'an equal split.',
                 style: QPayType.heroSub,
               ),
             ),
@@ -77,41 +106,72 @@ class CoDirectorsScreen extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _editPercent(
+    BuildContext context,
+    FormationState s,
+    int index,
+    String name,
+  ) async {
+    final result = await showModalBottomSheet<int?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: QPayTokens.canvas,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => _PercentSheet(
+        name: name,
+        initial: index < s.sharePercents.length ? s.sharePercents[index] : 0,
+      ),
+    );
+    if (result != null) s.setSharePercent(index, result);
+  }
 }
 
-class _FounderRow extends StatelessWidget {
-  final String name;
-  final int percent;
-  const _FounderRow({required this.name, required this.percent});
+class _TotalRow extends StatelessWidget {
+  final int total;
+  final int remaining;
+  const _TotalRow({required this.total, required this.remaining});
 
   @override
   Widget build(BuildContext context) {
+    final ok = total == 100;
+    final over = total > 100;
+    final color = ok
+        ? QPayTokens.success
+        : (over ? QPayTokens.alert : QPayTokens.warn);
+    final bg = ok
+        ? QPayTokens.successBg
+        : (over ? QPayTokens.alertBg : QPayTokens.warnBg);
+    final detail = ok
+        ? 'fully allocated'
+        : over
+            ? '${(-remaining)}% over — bring it back to 100'
+            : '$remaining% remaining';
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       decoration: BoxDecoration(
-        color: QPayTokens.cardBase,
-        borderRadius: BorderRadius.circular(QPayTokens.rCard),
-        border: Border.all(color: QPayTokens.ink, width: 1.5),
+        color: bg,
+        borderRadius: BorderRadius.circular(QPayTokens.rPill),
       ),
       child: Row(
         children: [
+          Icon(
+            ok
+                ? Icons.check_circle_rounded
+                : Icons.error_outline_rounded,
+            color: color,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name.isEmpty ? 'You' : name,
-                  style: QPayType.optionTitle,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    _Chip(label: 'You', tone: _ChipTone.dark),
-                    const SizedBox(width: 6),
-                    _Chip(label: '$percent%', tone: _ChipTone.muted),
-                  ],
-                ),
-              ],
+            child: Text(
+              'Total: $total%  ·  $detail',
+              style: QPayType.optionTitle.copyWith(
+                fontSize: 13,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -120,24 +180,36 @@ class _FounderRow extends StatelessWidget {
   }
 }
 
-class _CoRow extends StatelessWidget {
-  final CoDirector director;
+class _DirectorRow extends StatelessWidget {
+  final String title;
+  final String subtitle;
   final int percent;
-  final VoidCallback onRemove;
-  const _CoRow({
-    required this.director,
+  final bool isFounder;
+  final bool statusVerified;
+  final VoidCallback onPercentTap;
+  final VoidCallback? onRemove;
+
+  const _DirectorRow({
+    required this.title,
+    required this.subtitle,
     required this.percent,
+    required this.isFounder,
+    this.statusVerified = false,
+    required this.onPercentTap,
     required this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 6, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
       decoration: BoxDecoration(
-        color: QPayTokens.cardBase.withValues(alpha: 0.7),
+        color: QPayTokens.cardBase.withValues(alpha: isFounder ? 1 : 0.7),
         borderRadius: BorderRadius.circular(QPayTokens.rCard),
-        border: Border.all(color: QPayTokens.border, width: 1.5),
+        border: Border.all(
+          color: isFounder ? QPayTokens.ink : QPayTokens.border,
+          width: 1.5,
+        ),
       ),
       child: Row(
         children: [
@@ -145,36 +217,83 @@ class _CoRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(director.name, style: QPayType.optionTitle),
+                Text(title, style: QPayType.optionTitle),
                 const SizedBox(height: 2),
-                Text(director.email, style: QPayType.optionSub),
+                Text(subtitle, style: QPayType.optionSub),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    _Chip(
-                      label: director.status == 'verified'
-                          ? '✓ Verified'
-                          : 'Pending invite',
-                      tone: director.status == 'verified'
-                          ? _ChipTone.success
-                          : _ChipTone.muted,
-                    ),
-                    const SizedBox(width: 6),
-                    _Chip(label: '$percent%', tone: _ChipTone.muted),
+                    if (!isFounder)
+                      _StatusChip(
+                        label: statusVerified
+                            ? '✓ Verified'
+                            : 'Pending invite',
+                        success: statusVerified,
+                      ),
                   ],
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(
-              Icons.close_rounded,
-              color: QPayTokens.ink3,
-              size: 20,
+          Material(
+            color: QPayTokens.ink,
+            borderRadius: BorderRadius.circular(QPayTokens.rPill),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(QPayTokens.rPill),
+              onTap: onPercentTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                child: Text(
+                  '$percent%',
+                  style: QPayType.optionTitle.copyWith(
+                    color: const Color(0xFFFFFCF5),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
             ),
-            onPressed: onRemove,
           ),
+          if (onRemove != null)
+            IconButton(
+              icon: const Icon(
+                Icons.close_rounded,
+                color: QPayTokens.ink3,
+                size: 20,
+              ),
+              onPressed: onRemove,
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final bool success;
+  const _StatusChip({required this.label, required this.success});
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, fg) = success
+        ? (QPayTokens.successBg, QPayTokens.success)
+        : (QPayTokens.n100, QPayTokens.ink2);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(QPayTokens.rPill),
+      ),
+      child: Text(
+        label,
+        style: QPayType.optionSub.copyWith(
+          color: fg,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -195,11 +314,7 @@ class _AddRow extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(QPayTokens.rCard),
-            border: Border.all(
-              color: QPayTokens.borderStrong,
-              width: 1.5,
-              style: BorderStyle.solid,
-            ),
+            border: Border.all(color: QPayTokens.borderStrong, width: 1.5),
           ),
           child: Row(
             children: [
@@ -227,32 +342,97 @@ class _AddRow extends StatelessWidget {
   }
 }
 
-enum _ChipTone { dark, muted, success }
+class _PercentSheet extends StatefulWidget {
+  final String name;
+  final int initial;
+  const _PercentSheet({required this.name, required this.initial});
 
-class _Chip extends StatelessWidget {
-  final String label;
-  final _ChipTone tone;
-  const _Chip({required this.label, required this.tone});
+  @override
+  State<_PercentSheet> createState() => _PercentSheetState();
+}
+
+class _PercentSheetState extends State<_PercentSheet> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initial.toString());
+    _ctrl.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  int? get _parsed {
+    final n = int.tryParse(_ctrl.text.trim());
+    if (n == null || n < 0 || n > 100) return null;
+    return n;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = switch (tone) {
-      _ChipTone.dark => (QPayTokens.ink, const Color(0xFFFFFCF5)),
-      _ChipTone.muted => (QPayTokens.n100, QPayTokens.ink2),
-      _ChipTone.success => (QPayTokens.successBg, QPayTokens.success),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(QPayTokens.rPill),
-      ),
-      child: Text(
-        label,
-        style: QPayType.optionSub.copyWith(
-          color: fg,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+    final inset = MediaQuery.of(context).viewInsets.bottom;
+    final ok = _parsed != null;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + inset),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: QPayTokens.n300,
+                  borderRadius: BorderRadius.circular(QPayTokens.rPill),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                '${widget.name}\'s share',
+                style: QPayType.heroTitle.copyWith(fontSize: 22),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                'A whole number from 0 to 100.',
+                style: QPayType.heroSub,
+              ),
+            ),
+            const SizedBox(height: 14),
+            QField(
+              controller: _ctrl,
+              placeholder: '50',
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: false,
+                signed: false,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+              ],
+            ),
+            const SizedBox(height: 16),
+            QButton(
+              label: 'Save',
+              onPressed: ok
+                  ? () => Navigator.of(context).pop(_parsed)
+                  : null,
+            ),
+          ],
         ),
       ),
     );

@@ -31,6 +31,13 @@ class FormationState extends ChangeNotifier {
   /// the IN01 can be filed.
   List<CoDirector> coDirectors = const [];
 
+  /// Share split, founder first, then co-directors in order.
+  /// Length always equals 1 + coDirectors.length. Auto-balanced to an
+  /// equal split whenever co-directors are added or removed. The user
+  /// can override individual rows on /co-directors; we still require
+  /// the total to equal 100% before letting them continue.
+  List<int> sharePercents = const [100];
+
   // ───── Director (editable on /director-details) ─────
   /// All fields start empty — the only auto-filled identity data is the
   /// `userName` captured at signup. Everything else needs the user to enter
@@ -86,11 +93,13 @@ class FormationState extends ChangeNotifier {
     if (isSolo == v) return;
     isSolo = v;
     if (v) coDirectors = const [];
+    _resetEqualSplit();
     notifyListeners();
   }
 
   void addCoDirector(CoDirector d) {
     coDirectors = List.unmodifiable([...coDirectors, d]);
+    _resetEqualSplit();
     notifyListeners();
   }
 
@@ -98,15 +107,33 @@ class FormationState extends ChangeNotifier {
     coDirectors = List.unmodifiable(
       coDirectors.where((d) => d.email != email),
     );
+    _resetEqualSplit();
     notifyListeners();
   }
 
-  /// Equal share percentages: founder + co-directors all share equally.
-  /// Returns the percentage rounded down so totals never exceed 100%.
-  int get equalSharePercent {
-    final n = 1 + coDirectors.length;
-    return (100 / n).floor();
+  void setSharePercent(int index, int pct) {
+    if (index < 0 || index >= sharePercents.length) return;
+    final clamped = pct.clamp(0, 100);
+    if (sharePercents[index] == clamped) return;
+    final next = [...sharePercents];
+    next[index] = clamped;
+    sharePercents = List.unmodifiable(next);
+    notifyListeners();
   }
+
+  /// Recompute an equal split across founder + every co-director.
+  /// Any rounding leftover lands on the founder so the total stays at 100%.
+  void _resetEqualSplit() {
+    final n = 1 + coDirectors.length;
+    final base = 100 ~/ n;
+    final remainder = 100 - base * n;
+    sharePercents = List.unmodifiable(
+      [base + remainder, ...List.filled(n - 1, base)],
+    );
+  }
+
+  int get totalSharePercent => sharePercents.fold<int>(0, (a, b) => a + b);
+  bool get sharesValid => totalSharePercent == 100;
 
   void setDirectorDob(DateTime? v) {
     if (directorDob == v) return;
@@ -183,10 +210,9 @@ class FormationState extends ChangeNotifier {
       if (n.isEmpty) return 'You · 100 shares · 100% PSC';
       return '$n · 100 shares · 100% PSC';
     }
-    final total = 1 + coDirectors.length;
-    final pct = equalSharePercent;
+    final pcts = sharePercents.join(' / ');
     return '$n + ${coDirectors.length} co-director${coDirectors.length == 1 ? '' : 's'} · '
-        '$total × $pct% shares';
+        'shares $pcts%';
   }
 }
 
