@@ -6,7 +6,12 @@ import '../../../design_system/typography.dart';
 import '../../../services/auth_provider.dart';
 import '../../../services/formation_state.dart';
 
-/// Home tab content — fresh business account, all numbers at zero.
+/// Home tab. Two visual states:
+///   • Empty — no account opened yet. Shows the page title and two
+///     large choice cards (open QPay account / connect existing bank).
+///     No noise, no zeroed P&L.
+///   • Active — once a QPay or external account exists, shows the
+///     dashboard: balance, P&L, tax forecast, action grid.
 class HomeTab extends StatelessWidget {
   final String companyName;
   const HomeTab({super.key, required this.companyName});
@@ -14,39 +19,21 @@ class HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = FormationProvider.of(context);
+    final hasAccount = s.bankAccountOpen || s.externalBankLinked;
+
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _PageTitle(companyName: companyName),
-            const SizedBox(height: 18),
-            if (s.bankAccountOpen) ...[
-              const _AccountCard(),
-              const SizedBox(height: 22),
-            ],
-            if (!s.bankAccountOpen || !s.externalBankLinked) ...[
-              const _SectionHeader(left: 'BANKING'),
-              const SizedBox(height: 8),
-              _BankingActions(
-                showOpenAccount: !s.bankAccountOpen,
-                showConnectBank: !s.externalBankLinked,
-              ),
-              const SizedBox(height: 22),
-            ],
-            const _SectionHeader(
-              left: 'PROFIT & LOSS · YTD',
-              right: 'Just opened',
+            const SizedBox(height: 22),
+            Expanded(
+              child: hasAccount
+                  ? _DashboardBody(s: s)
+                  : const _EmptyBody(),
             ),
-            const SizedBox(height: 8),
-            const _PnlCard(),
-            const SizedBox(height: 22),
-            const _SectionHeader(left: 'TAX FORECAST'),
-            const SizedBox(height: 8),
-            const _TaxList(),
-            const SizedBox(height: 22),
-            const _ActionGrid(),
           ],
         ),
       ),
@@ -54,52 +41,57 @@ class HomeTab extends StatelessWidget {
   }
 }
 
-class _BankingActions extends StatelessWidget {
-  final bool showOpenAccount;
-  final bool showConnectBank;
+// ───── Empty state: two big choice cards ─────
 
-  const _BankingActions({
-    required this.showOpenAccount,
-    required this.showConnectBank,
-  });
+class _EmptyBody extends StatelessWidget {
+  const _EmptyBody();
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showOpenAccount)
-          _BankingCard(
-            icon: Icons.account_balance_wallet_rounded,
-            title: 'Open QPay business account',
-            subtitle: 'Sort code + account number · £15/mo, first month free',
-            accent: true,
-            onTap: () => context.push('/banking-psc'),
-          ),
-        if (showOpenAccount && showConnectBank) const SizedBox(height: 10),
-        if (showConnectBank)
-          _BankingCard(
-            icon: Icons.compare_arrows_rounded,
-            title: 'Connect your existing bank',
-            subtitle: 'Read-only via Open Banking · TrueLayer',
-            accent: false,
-            onTap: () => context.push('/banking-connect'),
-          ),
+        Text('Pick how you want to bank.', style: QPayType.heroSub),
+        const SizedBox(height: 18),
+        _ChoiceCard(
+          eyebrow: 'QPay',
+          title: 'Open QPay business\naccount',
+          subtitle:
+              'Sort code + account number, ready in minutes. £15/mo, first month free.',
+          accent: true,
+          icon: Icons.account_balance_wallet_rounded,
+          onTap: () => context.push('/banking-psc'),
+        ),
+        const SizedBox(height: 14),
+        _ChoiceCard(
+          eyebrow: 'Open Banking',
+          title: 'Connect your\nexisting bank',
+          subtitle:
+              'Read-only balances + transactions via TrueLayer. We never move money.',
+          accent: false,
+          icon: Icons.compare_arrows_rounded,
+          onTap: () => context.push('/banking-connect'),
+        ),
+        const Spacer(),
       ],
     );
   }
 }
 
-class _BankingCard extends StatelessWidget {
-  final IconData icon;
+class _ChoiceCard extends StatelessWidget {
+  final String eyebrow;
   final String title;
   final String subtitle;
   final bool accent;
+  final IconData icon;
   final VoidCallback onTap;
-  const _BankingCard({
-    required this.icon,
+
+  const _ChoiceCard({
+    required this.eyebrow,
     required this.title,
     required this.subtitle,
     required this.accent,
+    required this.icon,
     required this.onTap,
   });
 
@@ -107,44 +99,140 @@ class _BankingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: QPayTokens.cardBase,
-      borderRadius: BorderRadius.circular(QPayTokens.rCard),
+      borderRadius: BorderRadius.circular(QPayTokens.rCard + 4),
       child: InkWell(
-        borderRadius: BorderRadius.circular(QPayTokens.rCard),
+        borderRadius: BorderRadius.circular(QPayTokens.rCard + 4),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+          padding: const EdgeInsets.fromLTRB(18, 18, 16, 18),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(QPayTokens.rCard),
+            borderRadius: BorderRadius.circular(QPayTokens.rCard + 4),
             border: Border.all(
               color: accent ? QPayTokens.accent : QPayTokens.border,
               width: accent ? 1.5 : 1,
             ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
                   color: accent ? QPayTokens.accentSoft : QPayTokens.canvas,
-                  borderRadius: BorderRadius.circular(QPayTokens.rMd),
+                  borderRadius: BorderRadius.circular(QPayTokens.rCard),
                 ),
                 alignment: Alignment.center,
                 child: Icon(
                   icon,
                   color: accent ? QPayTokens.accent : QPayTokens.ink2,
-                  size: 20,
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: QPayType.optionTitle),
-                    const SizedBox(height: 2),
+                    Text(
+                      eyebrow,
+                      style: QPayType.fieldLabel.copyWith(
+                        color: accent
+                            ? QPayTokens.accent
+                            : QPayTokens.ink3,
+                        letterSpacing: 1.4,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      style: QPayType.heroTitle.copyWith(
+                        fontSize: 19,
+                        height: 1.15,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Text(subtitle, style: QPayType.heroSub),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ───── Active dashboard body ─────
+
+class _DashboardBody extends StatelessWidget {
+  final FormationState s;
+  const _DashboardBody({required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (s.bankAccountOpen) const _AccountCard(),
+          if (s.bankAccountOpen) const SizedBox(height: 22),
+          if (!s.bankAccountOpen && s.externalBankLinked) ...[
+            const _ExternalLinkedCard(),
+            const SizedBox(height: 22),
+          ],
+          const _SectionHeader(
+            left: 'PROFIT & LOSS · YTD',
+            right: 'Just opened',
+          ),
+          const SizedBox(height: 8),
+          const _PnlCard(),
+          const SizedBox(height: 22),
+          const _SectionHeader(left: 'TAX FORECAST'),
+          const SizedBox(height: 8),
+          const _TaxList(),
+          const SizedBox(height: 22),
+          const _ActionGrid(),
+          if (s.bankAccountOpen && !s.externalBankLinked) ...[
+            const SizedBox(height: 22),
+            _SecondaryConnectRow(),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SecondaryConnectRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(QPayTokens.rCard),
+        onTap: () => context.push('/banking-connect'),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+          decoration: BoxDecoration(
+            color: QPayTokens.cardBase,
+            borderRadius: BorderRadius.circular(QPayTokens.rCard),
+            border: Border.all(color: QPayTokens.border, width: 1),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.compare_arrows_rounded,
+                color: QPayTokens.ink2,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Connect another bank · Open Banking',
+                  style: QPayType.optionTitle.copyWith(fontSize: 14),
                 ),
               ),
               const Icon(Icons.chevron_right_rounded,
@@ -156,6 +244,8 @@ class _BankingCard extends StatelessWidget {
     );
   }
 }
+
+// ───── Header ─────
 
 class _PageTitle extends StatelessWidget {
   final String companyName;
@@ -215,6 +305,8 @@ class _PageTitle extends StatelessWidget {
   }
 }
 
+// ───── Active dashboard tiles (unchanged from before) ─────
+
 class _AccountCard extends StatelessWidget {
   const _AccountCard();
 
@@ -252,6 +344,51 @@ class _AccountCard extends StatelessWidget {
             style: QPayType.heroSub.copyWith(
               color: QPayTokens.ink4,
               fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExternalLinkedCard extends StatelessWidget {
+  const _ExternalLinkedCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      decoration: BoxDecoration(
+        color: QPayTokens.cardBase,
+        borderRadius: BorderRadius.circular(QPayTokens.rCard),
+        border: Border.all(color: QPayTokens.border, width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: QPayTokens.successBg,
+              borderRadius: BorderRadius.circular(QPayTokens.rMd),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.check_rounded,
+              size: 18,
+              color: QPayTokens.success,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('External bank linked', style: QPayType.optionTitle),
+                const SizedBox(height: 2),
+                Text('Open Banking · TrueLayer', style: QPayType.heroSub),
+              ],
             ),
           ),
         ],
@@ -314,15 +451,13 @@ class _PnlCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  'Net profit',
-                  style: QPayType.optionTitle,
-                ),
+                child: Text('Net profit', style: QPayType.optionTitle),
               ),
               Text('£0', style: QPayType.optionTitle),
               const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: QPayTokens.n100,
                   borderRadius: BorderRadius.circular(QPayTokens.rPill),

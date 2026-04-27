@@ -18,10 +18,6 @@ class LiveScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = FormationProvider.of(context);
-    // Path A: bank account is opened together with the company.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!s.bankAccountOpen) s.setBankAccountOpen(true);
-    });
     final companyName =
         s.filedCompanyName == '—' ? 'Your Company' : s.filedCompanyName;
     final jurisdiction = s.useQPayOffice
