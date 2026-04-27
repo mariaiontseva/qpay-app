@@ -24,11 +24,13 @@ class FormationState extends ChangeNotifier {
   UkAddress? ownAddress;
 
   // ───── Director (editable on /director-details) ─────
-  /// Defaults are placeholder mock data; user can override every field.
-  String directorDob = '12 May 1988';
-  String directorNationality = 'British';
-  String directorCountryOfResidence = 'United Kingdom';
-  String directorResidentialAddress = "45 King's Rd, London SW3 4UH";
+  /// All fields start empty — the only auto-filled identity data is the
+  /// `userName` captured at signup. Everything else needs the user to enter
+  /// it themselves (with field-appropriate UX in director_details_screen).
+  DateTime? directorDob;
+  String directorNationality = '';
+  String directorCountryOfResidence = '';
+  String directorResidentialAddress = '';
 
   // ───── ID verification capture ─────
   /// File path of the document photo captured on /id-scan.
@@ -72,10 +74,21 @@ class FormationState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setDirectorDob(String v) {
+  void setDirectorDob(DateTime? v) {
     if (directorDob == v) return;
     directorDob = v;
     notifyListeners();
+  }
+
+  /// Format DOB for display per UK convention (e.g. "12 May 1988").
+  String get directorDobLabel {
+    final d = directorDob;
+    if (d == null) return '';
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
 
   void setDirectorNationality(String v) {
