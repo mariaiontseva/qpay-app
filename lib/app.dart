@@ -61,7 +61,10 @@ final GoRouter _router = GoRouter(
       pageBuilder: (_, state) {
         final extra = state.extra as Map<String, String>? ?? const {};
         return _slidePage(
-          VerifyOtpScreen(email: extra['email'] ?? ''),
+          VerifyOtpScreen(
+            email: extra['email'] ?? '',
+            name: extra['name'] ?? '',
+          ),
         );
       },
     ),

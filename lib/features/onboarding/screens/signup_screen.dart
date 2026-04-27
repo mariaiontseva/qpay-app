@@ -21,6 +21,7 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _name = TextEditingController();
   final _email = TextEditingController();
 
   static final _emailRe = RegExp(r'^[\w.\-+]+@[\w\-]+\.[\w\-.]+$');
@@ -31,19 +32,28 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void initState() {
     super.initState();
+    _name.addListener(_onChanged);
     _email.addListener(_onChanged);
   }
 
   @override
   void dispose() {
+    _name.dispose();
     _email.dispose();
     super.dispose();
   }
 
   void _onChanged() => setState(() => _error = null);
 
+  bool get _nameOk {
+    final s = _name.text.trim();
+    if (s.length < 2) return false;
+    // At least two whitespace-separated tokens — "first last".
+    return s.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).length >= 2;
+  }
+
   bool get _emailOk => _emailRe.hasMatch(_email.text.trim());
-  bool get _allValid => _emailOk && !_busy;
+  bool get _allValid => _nameOk && _emailOk && !_busy;
 
   Future<void> _sendCode() async {
     if (!_allValid) return;
@@ -52,10 +62,12 @@ class _SignupScreenState extends State<SignupScreen> {
       _error = null;
     });
     final email = _email.text.trim();
+    final name = _name.text.trim();
     try {
       await AuthProvider.of(context).sendOtp(email);
       if (!mounted) return;
-      context.push('/verify', extra: <String, String>{'email': email});
+      context.push('/verify',
+          extra: <String, String>{'email': email, 'name': name});
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = '${e.statusCode ?? ''} ${e.message}'.trim());
@@ -92,7 +104,17 @@ class _SignupScreenState extends State<SignupScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
             child: QField(
-              label: 'Email',
+              label: 'NAME',
+              controller: _name,
+              placeholder: 'First and last',
+              autofillHint: AutofillHints.name,
+              keyboardType: TextInputType.name,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+            child: QField(
+              label: 'EMAIL',
               controller: _email,
               placeholder: 'you@example.com',
               hint: "We'll email you an 8-digit code",

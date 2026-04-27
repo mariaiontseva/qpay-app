@@ -12,15 +12,16 @@ import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_screen.dart';
 import '../../../services/auth_provider.dart';
-import '../../../services/auth_service.dart';
 
 /// Post-signup OTP screen. Eight-digit email code → Supabase verifyOTP.
-/// If the user has no stored name in metadata → `/full-name`.
-/// Otherwise (returning user) → `/intent` directly.
+/// Name is now collected on signup, so we go straight to /intent. The
+/// name (if any) is persisted into Supabase user metadata right after
+/// the OTP exchange.
 class VerifyOtpScreen extends StatefulWidget {
   final String email;
+  final String name;
 
-  const VerifyOtpScreen({super.key, required this.email});
+  const VerifyOtpScreen({super.key, required this.email, this.name = ''});
 
   @override
   State<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -67,16 +68,6 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
   bool get _codeOk => _code.text.length == _codeLength;
 
-  /// True if we should bounce to `/full-name` instead of `/intent` after
-  /// a successful OTP exchange. A new user or a returning user who never
-  /// supplied a name both land on the name screen.
-  bool _shouldAskName(AuthService auth) {
-    if (!auth.isLive) return true; // mock mode — always ask
-    final user = Supabase.instance.client.auth.currentUser;
-    final stored = user?.userMetadata?['name'] as String?;
-    return stored == null || stored.trim().isEmpty;
-  }
-
   Future<void> _verify() async {
     if (!_codeOk || _busy) return;
     setState(() {
@@ -86,11 +77,15 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     try {
       final auth = AuthProvider.of(context);
       await auth.verifyOtp(email: widget.email, code: _code.text);
+      // Persist the name captured on signup, if any. Failures here are
+      // non-fatal — the user can still proceed.
+      if (widget.name.trim().isNotEmpty) {
+        try {
+          await auth.updateProfile(name: widget.name.trim());
+        } catch (_) {}
+      }
       if (!mounted) return;
-
-      // Branch by stored name: new users → ask for it; returning users skip.
-      final needsName = _shouldAskName(auth);
-      context.go(needsName ? '/full-name' : '/intent');
+      context.go('/intent');
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
