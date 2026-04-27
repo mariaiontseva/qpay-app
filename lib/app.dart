@@ -8,13 +8,21 @@ import 'features/onboarding/onboarding_shell.dart';
 import 'features/onboarding/screens/address_confirm_screen.dart';
 import 'features/onboarding/screens/address_manual_screen.dart';
 import 'features/onboarding/screens/articles_screen.dart';
+import 'features/onboarding/screens/director_details_screen.dart';
 import 'features/onboarding/screens/email_screen.dart';
-import 'features/onboarding/screens/postcode_screen.dart';
+import 'features/onboarding/screens/filing_screen.dart';
+import 'features/onboarding/screens/form_screen.dart';
+import 'features/onboarding/screens/id_scan_screen.dart';
+import 'features/onboarding/screens/id_selfie_screen.dart';
+import 'features/onboarding/screens/id_verified_screen.dart';
 import 'features/onboarding/screens/intent_screen.dart';
+import 'features/onboarding/screens/live_screen.dart';
 import 'features/onboarding/screens/name_screen.dart';
+import 'features/onboarding/screens/postcode_screen.dart';
 import 'features/onboarding/screens/preflight_screen.dart';
 import 'features/onboarding/screens/registered_office_screen.dart';
 import 'features/onboarding/screens/sic_screen.dart';
+import 'features/onboarding/screens/summary_screen.dart';
 import 'services/address_service.dart';
 import 'features/onboarding/screens/signin_screen.dart';
 import 'features/onboarding/screens/signup_screen.dart';
@@ -74,6 +82,30 @@ final GoRouter _router = GoRouter(
         final extra = state.extra as Map<String, String>? ?? const {};
         return _slidePage(EmailScreen(name: extra['name'] ?? ''));
       },
+    ),
+    GoRoute(
+      path: '/id-scan',
+      pageBuilder: (_, __) => _slidePage(const IdScanScreen()),
+    ),
+    GoRoute(
+      path: '/id-selfie',
+      pageBuilder: (_, __) => _slidePage(const IdSelfieScreen()),
+    ),
+    GoRoute(
+      path: '/id-verified',
+      pageBuilder: (_, __) => _slidePage(const IdVerifiedScreen()),
+    ),
+    GoRoute(
+      path: '/form',
+      pageBuilder: (_, __) => _slidePage(const FormScreen()),
+    ),
+    GoRoute(
+      path: '/filing',
+      pageBuilder: (_, __) => _slidePage(const FilingScreen()),
+    ),
+    GoRoute(
+      path: '/live',
+      pageBuilder: (_, __) => _slidePage(const LiveScreen()),
     ),
     // Persistent onboarding chrome (back arrow + progress bar) wraps the
     // A-02…A-05 screens. `NoTransitionPage` keeps the shell in place while
@@ -138,6 +170,14 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/articles',
           pageBuilder: (_, __) => _innerFade(const ArticlesScreen()),
+        ),
+        GoRoute(
+          path: '/summary',
+          pageBuilder: (_, __) => _innerFade(const SummaryScreen()),
+        ),
+        GoRoute(
+          path: '/director-details',
+          pageBuilder: (_, __) => _innerFade(const DirectorDetailsScreen()),
         ),
       ],
     ),

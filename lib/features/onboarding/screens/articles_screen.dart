@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../design_system/tokens.dart';
 import '../../../design_system/typography.dart';
@@ -20,8 +21,7 @@ class ArticlesScreen extends StatelessWidget {
       bottom: QBottomBar(
         child: QButton(
           label: 'Continue',
-          // ignore: prefer_const_constructors
-          onPressed: () {},
+          onPressed: () => context.push('/summary'),
         ),
       ),
       child: Column(

@@ -5,13 +5,12 @@ import '../../../design_system/tokens.dart';
 import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_choice_card.dart';
-import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
 
-/// A-07 · Registered office choice + optional private email.
-/// Lives inside [OnboardingShell]. Picking "My own address" + Continue
-/// enters the A-07A → A-07B → A-07C postcode sub-flow.
+/// A-07 · Registered office choice. Lives inside [OnboardingShell].
+/// Picking "My own address" + Continue enters the A-07A postcode sub-flow.
+/// Email is collected separately on signup.
 enum _OfficeChoice { qpay, own }
 
 class RegisteredOfficeScreen extends StatefulWidget {
@@ -24,13 +23,6 @@ class RegisteredOfficeScreen extends StatefulWidget {
 
 class _RegisteredOfficeScreenState extends State<RegisteredOfficeScreen> {
   _OfficeChoice _choice = _OfficeChoice.qpay;
-  final TextEditingController _emailCtrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _emailCtrl.dispose();
-    super.dispose();
-  }
 
   void _onContinue() {
     if (_choice == _OfficeChoice.qpay) {
@@ -73,16 +65,6 @@ class _RegisteredOfficeScreenState extends State<RegisteredOfficeScreen> {
                   "We'll find it from your postcode. Becomes public.",
               selected: _choice == _OfficeChoice.own,
               onTap: () => setState(() => _choice = _OfficeChoice.own),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, QPayTokens.s5, 24, 0),
-            child: QField(
-              label: 'PRIVATE EMAIL (OPTIONAL)',
-              controller: _emailCtrl,
-              placeholder: 'you@example.com',
-              keyboardType: TextInputType.emailAddress,
-              autofillHint: 'email',
             ),
           ),
           const SizedBox(height: QPayTokens.s6),
