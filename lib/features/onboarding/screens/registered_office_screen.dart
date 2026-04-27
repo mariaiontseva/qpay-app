@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../design_system/tokens.dart';
 import '../../../design_system/widgets/q_bottom_bar.dart';
@@ -47,7 +48,7 @@ class _RegisteredOfficeScreenState extends State<RegisteredOfficeScreen> {
       bottom: QBottomBar(
         child: QButton(
           label: 'Continue',
-          onPressed: canContinue ? () {} : null,
+          onPressed: canContinue ? () => context.push('/articles') : null,
         ),
       ),
       child: Column(

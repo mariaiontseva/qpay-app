@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'design_system/tokens.dart';
 import 'features/onboarding/onboarding_shell.dart';
+import 'features/onboarding/screens/articles_screen.dart';
 import 'features/onboarding/screens/full_name_screen.dart';
 import 'features/onboarding/screens/intent_screen.dart';
 import 'features/onboarding/screens/name_screen.dart';
@@ -98,6 +99,10 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/registered-office',
           pageBuilder: (_, __) => _innerFade(const RegisteredOfficeScreen()),
+        ),
+        GoRoute(
+          path: '/articles',
+          pageBuilder: (_, __) => _innerFade(const ArticlesScreen()),
         ),
       ],
     ),

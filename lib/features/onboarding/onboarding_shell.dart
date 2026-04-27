@@ -29,6 +29,7 @@ class OnboardingShell extends StatelessWidget {
     '/name': 4,
     '/sic': 5,
     '/registered-office': 6,
+    '/articles': 7,
   };
 
   static const int _total = 9;

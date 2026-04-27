@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../design_system/tokens.dart';
 import '../../../design_system/typography.dart';
@@ -9,8 +10,6 @@ import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
-import '../../../services/backend_provider.dart';
-import '../../../services/backend_service.dart';
 import '../../../services/companies_house_provider.dart';
 import '../../../services/companies_house_service.dart';
 
@@ -37,12 +36,6 @@ class _NameScreenState extends State<NameScreen> {
   NameAvailability? _result;
   String? _errorMsg;
   int _reqSeq = 0;
-
-  // Submission to the backend (which round-trips to CH XML Gateway, or
-  // falls back to mock-accepted while creds are under review).
-  bool _submitting = false;
-  FormationSubmitResult? _submitResult;
-  String? _submitError;
 
   @override
   void initState() {
@@ -101,41 +94,16 @@ class _NameScreenState extends State<NameScreen> {
 
   bool get _canContinue =>
       _state == _CheckState.available &&
-      _ctrl.text.trim().length >= 3 &&
-      !_submitting;
-
-  Future<void> _submit() async {
-    if (!_canContinue) return;
-    final backend = BackendProvider.of(context);
-    if (!backend.isConfigured) {
-      setState(() => _submitError =
-          'Backend URL not configured. Build with --dart-define=BACKEND_URL=...');
-      return;
-    }
-    setState(() {
-      _submitting = true;
-      _submitError = null;
-      _submitResult = null;
-    });
-    try {
-      final res = await backend.submitSample(_ctrl.text.trim());
-      if (!mounted) return;
-      setState(() => _submitResult = res);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _submitError = 'Backend error: $e');
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
+      _ctrl.text.trim().length >= 3;
 
   @override
   Widget build(BuildContext context) {
     return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
-          label: _submitting ? 'Filing…' : 'File with Companies House',
-          onPressed: _canContinue ? _submit : null,
+          label: 'Continue',
+          onPressed:
+              _canContinue ? () => context.push('/sic') : null,
         ),
       ),
       child: Column(
@@ -163,22 +131,6 @@ class _NameScreenState extends State<NameScreen> {
               ),
             ),
           ),
-          if (_submitResult != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-              child: _SubmitResultCard(result: _submitResult!),
-            ),
-          if (_submitError != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-              child: Text(
-                _submitError!,
-                style: QPayType.heroSub.copyWith(
-                  color: QPayTokens.alert,
-                  fontSize: 13,
-                ),
-              ),
-            ),
           const SizedBox(height: QPayTokens.s6),
         ],
       ),
@@ -286,63 +238,3 @@ class _StatusLine extends StatelessWidget {
       );
 }
 
-class _SubmitResultCard extends StatelessWidget {
-  final FormationSubmitResult result;
-  const _SubmitResultCard({required this.result});
-
-  @override
-  Widget build(BuildContext context) {
-    final accepted = result.outcome == 'accepted' ||
-        result.outcome == 'acknowledged';
-    final tint =
-        accepted ? QPayTokens.success : QPayTokens.alert;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: QPayTokens.cardBase,
-        borderRadius: BorderRadius.circular(QPayTokens.rCard),
-        border: Border.all(color: tint, width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: tint,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                accepted ? 'Filed' : 'Rejected',
-                style: QPayType.optionTitle.copyWith(color: tint),
-              ),
-              const Spacer(),
-              Text(result.transactionId, style: QPayType.footerNote),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (result.filedName != null)
-            Text(
-              result.filedName!,
-              style: QPayType.optionTitle,
-            ),
-          const SizedBox(height: 4),
-          Text('Outcome: ${result.outcome}', style: QPayType.optionSub),
-          if (result.errors.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            for (final e in result.errors)
-              Text(
-                '· ${e.code ?? ''} ${e.text}',
-                style: QPayType.optionSub.copyWith(color: QPayTokens.alert),
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-}
