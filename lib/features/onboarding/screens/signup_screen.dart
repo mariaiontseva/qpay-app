@@ -128,18 +128,10 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
       child: Row(
         children: [
-          // Long-press pushes the full onboarding chain so the back arrow
-          // walks through each step. Dev shortcut — remove once the real
-          // auth chain is wired.
+          // Dev shortcut: long-press the wordmark to reset the navigation
+          // stack to the first onboarding screen.
           GestureDetector(
-            onLongPress: () async {
-              final router = GoRouter.of(context);
-              for (final path in ['/intent', '/preflight', '/solo', '/name']) {
-                router.push(path);
-                await Future<void>.delayed(const Duration(milliseconds: 40));
-                if (!context.mounted) return;
-              }
-            },
+            onLongPress: () => context.go('/signup'),
             child: Text('QPay', style: QPayType.wordmark),
           ),
           const Spacer(),
