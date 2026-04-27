@@ -7,6 +7,7 @@ import 'design_system/tokens.dart';
 import 'features/onboarding/onboarding_shell.dart';
 import 'features/onboarding/screens/address_confirm_screen.dart';
 import 'features/onboarding/screens/address_manual_screen.dart';
+import 'features/home/home_shell.dart';
 import 'features/onboarding/screens/articles_screen.dart';
 import 'features/onboarding/screens/co_directors_screen.dart';
 import 'features/onboarding/screens/director_details_screen.dart';
@@ -108,6 +109,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/live',
       pageBuilder: (_, __) => _slidePage(const LiveScreen()),
+    ),
+    GoRoute(
+      path: '/home',
+      pageBuilder: (_, __) => _slidePage(const HomeShell()),
     ),
     // Persistent onboarding chrome (back arrow + progress bar) wraps the
     // A-02…A-05 screens. `NoTransitionPage` keeps the shell in place while

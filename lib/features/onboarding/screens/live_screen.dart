@@ -7,6 +7,7 @@ import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_screen.dart';
 import '../../../services/formation_state.dart';
 import '../../../services/postcode_service.dart';
+import 'package:go_router/go_router.dart';
 
 /// A-16 · Live. Top-level terminal route.
 /// Premium "your company is real" moment — dark hero card with the
@@ -34,7 +35,7 @@ class LiveScreen extends StatelessWidget {
           children: [
             QButton(
               label: 'Open my business account',
-              onPressed: () {},
+              onPressed: () => context.go('/home'),
             ),
             const SizedBox(height: 10),
             TextButton(
