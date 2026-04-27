@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
 import 'postcode_service.dart';
 
 /// One pickable address for a given postcode.
@@ -20,89 +24,92 @@ class UkAddress {
 
 /// Resolves a UK postcode to a list of pickable addresses.
 ///
-/// Real Royal Mail PAF data sits behind paid APIs (getaddress.io,
-/// ideal-postcodes, etc.). Until a key is wired up via
-/// `--dart-define=GETADDRESS_API_KEY=...` we fall back to a deterministic
-/// mock that derives plausible buildings from the postcode locality, so
-/// the sub-flow is testable end-to-end.
+/// Uses postcodes.io to validate and derive jurisdiction, then queries the
+/// public Overpass API (OpenStreetMap) for real buildings tagged with
+/// `addr:postcode = <pc>`. Coverage is partial — central UK has good data,
+/// rural areas can return zero — so callers must handle the empty-list
+/// case (UI routes those to manual entry).
 class AddressService {
   final PostcodeService _postcodeService;
+  final http.Client _client;
 
-  AddressService({PostcodeService? postcodeService})
-      : _postcodeService = postcodeService ?? PostcodeService();
+  AddressService({PostcodeService? postcodeService, http.Client? client})
+      : _postcodeService = postcodeService ?? PostcodeService(),
+        _client = client ?? http.Client();
+
+  static const String _overpassUrl = 'https://overpass-api.de/api/interpreter';
+  static const Duration _overpassTimeout = Duration(seconds: 12);
 
   Future<List<UkAddress>> findAddresses(String postcode) async {
     final pc = await _postcodeService.lookup(postcode);
-    return _mock(pc);
-  }
-
-  List<UkAddress> _mock(PostcodeResult pc) {
     final locality = pc.locality.split(',').first.trim();
-    final area = pc.postcode.split(' ').first;
-    // Only return entries for the small set of curated postcode areas; for
-    // anything else we deliberately return an empty list so the UI can
-    // route the user to manual entry instead of inventing fake addresses.
-    final pool = _curated[area];
-    if (pool == null) return const [];
-    return pool
-        .map((line1) => UkAddress(
-              line1: line1,
-              locality: locality,
-              postcode: pc.postcode,
-              jurisdiction: pc.jurisdiction,
-            ))
-        .toList();
+
+    final query =
+        '[out:json][timeout:10];nwr["addr:postcode"="${pc.postcode}"];out tags;';
+    try {
+      final res = await _client
+          .post(
+            Uri.parse(_overpassUrl),
+            body: query,
+          )
+          .timeout(_overpassTimeout);
+      if (res.statusCode != 200) return const [];
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      final elements =
+          (body['elements'] as List<dynamic>? ?? const <dynamic>[])
+              .cast<Map<String, dynamic>>();
+
+      final out = <UkAddress>[];
+      final seen = <String>{};
+      for (final el in elements) {
+        final tags = (el['tags'] as Map<String, dynamic>? ?? const {});
+        final line1 = _composeLine1(tags);
+        if (line1 == null || line1.trim().isEmpty) continue;
+        if (!seen.add(line1.toLowerCase())) continue;
+        out.add(UkAddress(
+          line1: line1,
+          locality: locality,
+          postcode: pc.postcode,
+          jurisdiction: pc.jurisdiction,
+        ));
+      }
+      // Sort: numeric house numbers first (ascending), then alpha.
+      out.sort((a, b) => _addressSortKey(a).compareTo(_addressSortKey(b)));
+      return out;
+    } catch (_) {
+      // Network / parse failure → empty so UI falls through to manual entry.
+      return const [];
+    }
   }
 
-  // A few well-known postcode areas seeded with real-feeling buildings so the
-  // demo looks credible. Add more as needed; falls back to _generic otherwise.
-  static const Map<String, List<String>> _curated = {
-    'SW1A': [
-      'Buckingham Palace',
-      '1 Buckingham Gate',
-      '2 Buckingham Gate',
-      '3 Buckingham Gate',
-      'Stable Yard House',
-      '10 Downing Street',
-    ],
-    'EC1A': [
-      '1 St Martin\'s Le Grand',
-      '2 St Martin\'s Le Grand',
-      '5 King Edward Street',
-      '10 Aldersgate Street',
-      '15 Newgate Street',
-    ],
-    'EC2': [
-      '1 Liverpool Street',
-      '8 Bishopsgate',
-      '22 Bishopsgate',
-      '1 Old Broad Street',
-      '120 Moorgate',
-    ],
-    'EH1': [
-      '1 Princes Street',
-      '3 North Bridge',
-      '15 George Street',
-      '20 Hanover Street',
-      '5 Royal Mile',
-    ],
-    'BT1': [
-      '1 Royal Avenue',
-      '9 Donegall Square',
-      '20 Wellington Place',
-      '5 Belfast Tower',
-      '14 Howard Street',
-    ],
-    'CF10': [
-      '1 Capital Quarter',
-      '5 Callaghan Square',
-      '12 Westgate Street',
-      '20 Park Place',
-      '8 Greyfriars Road',
-    ],
-  };
+  static String? _composeLine1(Map<String, dynamic> tags) {
+    final num_ = (tags['addr:housenumber'] as String?)?.trim();
+    final street = (tags['addr:street'] as String?)?.trim();
+    final houseName = (tags['addr:housename'] as String?)?.trim();
+    final name = (tags['name'] as String?)?.trim();
+    if (num_ != null && num_.isNotEmpty && street != null && street.isNotEmpty) {
+      return '$num_ $street';
+    }
+    if (houseName != null && houseName.isNotEmpty) {
+      if (street != null && street.isNotEmpty) return '$houseName, $street';
+      return houseName;
+    }
+    if (name != null && name.isNotEmpty) return name;
+    if (street != null && street.isNotEmpty) return street;
+    return null;
+  }
+
+  static String _addressSortKey(UkAddress a) {
+    final m = RegExp(r'^(\d+)').firstMatch(a.line1);
+    if (m != null) {
+      final n = int.tryParse(m.group(1)!) ?? 999999;
+      return '${n.toString().padLeft(7, "0")} ${a.line1}';
+    }
+    return 'z ${a.line1}';
+  }
 
   void dispose() {
     _postcodeService.dispose();
+    _client.close();
   }
 }
