@@ -9,6 +9,8 @@ import 'features/onboarding/screens/full_name_screen.dart';
 import 'features/onboarding/screens/intent_screen.dart';
 import 'features/onboarding/screens/name_screen.dart';
 import 'features/onboarding/screens/preflight_screen.dart';
+import 'features/onboarding/screens/registered_office_screen.dart';
+import 'features/onboarding/screens/sic_screen.dart';
 import 'features/onboarding/screens/signin_screen.dart';
 import 'features/onboarding/screens/signup_screen.dart';
 import 'features/onboarding/screens/solo_screen.dart';
@@ -88,6 +90,14 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/name',
           pageBuilder: (_, __) => _innerFade(const NameScreen()),
+        ),
+        GoRoute(
+          path: '/sic',
+          pageBuilder: (_, __) => _innerFade(const SicScreen()),
+        ),
+        GoRoute(
+          path: '/registered-office',
+          pageBuilder: (_, __) => _innerFade(const RegisteredOfficeScreen()),
         ),
       ],
     ),

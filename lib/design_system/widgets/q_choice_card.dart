@@ -5,10 +5,13 @@ import '../typography.dart';
 
 /// Selectable option card used on S02 (intent picker) and S04 (solo / team).
 /// Title + optional subtitle. A round checkbox on the top-right fills when
-/// selected.
+/// selected. Optional [tag] renders a mono caps line above the title — used
+/// on A-06 to show "SELECTED · 62012" / "SUGGESTED · 74100".
 class QChoiceCard extends StatelessWidget {
   final String title;
   final String? subtitle;
+  final String? tag;
+  final bool tagAccent;
   final bool selected;
   final VoidCallback onTap;
 
@@ -18,6 +21,8 @@ class QChoiceCard extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.subtitle,
+    this.tag,
+    this.tagAccent = false,
   });
 
   @override
@@ -47,6 +52,17 @@ class QChoiceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (tag != null) ...[
+                      Text(
+                        tag!,
+                        style: QPayType.progressNum.copyWith(
+                          color: tagAccent
+                              ? QPayTokens.accent
+                              : QPayTokens.ink3,
+                        ),
+                      ),
+                      const SizedBox(height: QPayTokens.s2 + 2),
+                    ],
                     Text(title, style: QPayType.optionTitle),
                     if (subtitle != null) ...[
                       const SizedBox(height: QPayTokens.s3),

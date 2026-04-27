@@ -27,6 +27,8 @@ class OnboardingShell extends StatelessWidget {
     '/preflight': 2,
     '/solo': 3,
     '/name': 4,
+    '/sic': 5,
+    '/registered-office': 6,
   };
 
   static const int _total = 9;
