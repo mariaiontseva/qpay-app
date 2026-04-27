@@ -8,7 +8,7 @@ import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_header.dart';
-import '../../../design_system/widgets/q_inner_screen.dart';
+import '../../../design_system/widgets/q_screen.dart';
 import '../../../services/companies_house_provider.dart';
 import '../../../services/formation_state.dart';
 
@@ -79,7 +79,7 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
   Widget build(BuildContext context) {
     final canContinue = _ctrl.text.trim().length == 8 &&
         _state != _LookupState.checking;
-    return QInnerScreen(
+    return QScreen(
       bottom: QBottomBar(
         child: QButton(
           label: _state == _LookupState.checking ? 'Looking up…' : 'Continue',

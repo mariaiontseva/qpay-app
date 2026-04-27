@@ -6,7 +6,7 @@ import '../../../design_system/typography.dart';
 import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_header.dart';
-import '../../../design_system/widgets/q_inner_screen.dart';
+import '../../../design_system/widgets/q_screen.dart';
 import '../../../services/formation_state.dart';
 
 /// B-02 · Confirm CH-pulled details.
@@ -18,7 +18,7 @@ class ExistingConfirmScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = FormationProvider.of(context);
-    return QInnerScreen(
+    return QScreen(
       bottom: QBottomBar(
         child: QButton(
           label: "Yes, that's mine",
