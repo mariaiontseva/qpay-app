@@ -22,7 +22,7 @@ class ExistingConfirmScreen extends StatelessWidget {
       bottom: QBottomBar(
         child: QButton(
           label: "Yes, that's mine",
-          onPressed: () => context.push('/director-details'),
+          onPressed: () => context.go('/director-details'),
         ),
       ),
       child: Column(
