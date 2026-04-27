@@ -28,6 +28,7 @@ class ExistingConfirmScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _BackBar(),
           const QHeader(
             title: 'Is this you?',
             subtitle:
@@ -89,6 +90,35 @@ class ExistingConfirmScreen extends StatelessWidget {
 String _titleCase(String s) {
   if (s.isEmpty) return s;
   return s[0].toUpperCase() + s.substring(1);
+}
+
+class _BackBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(QPayTokens.s5, 10, QPayTokens.s6, 0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(QPayTokens.rMd),
+                onTap: () => context.pop(),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: QPayTokens.ink,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Row extends StatelessWidget {

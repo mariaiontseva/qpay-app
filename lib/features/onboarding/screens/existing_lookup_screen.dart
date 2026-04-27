@@ -123,13 +123,10 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 14, 24, 0),
-            child: SizedBox(
-              height: 22,
-              child: _Status(
-                state: _state,
-                details: _details,
-                err: _err,
-              ),
+            child: _Status(
+              state: _state,
+              details: _details,
+              err: _err,
             ),
           ),
           const SizedBox(height: QPayTokens.s6),
@@ -167,8 +164,12 @@ class _Status extends StatelessWidget {
         );
       case _LookupState.found:
         return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _dot(QPayTokens.success),
+            Padding(
+              padding: const EdgeInsets.only(top: 7),
+              child: _dot(QPayTokens.success),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text.rich(
@@ -182,8 +183,6 @@ class _Status extends StatelessWidget {
                     ),
                   ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
