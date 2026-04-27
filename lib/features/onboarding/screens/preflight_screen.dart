@@ -6,12 +6,10 @@ import '../../../design_system/typography.dart';
 import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_header.dart';
+import '../../../design_system/widgets/q_inner_screen.dart';
 import '../../../design_system/widgets/q_numbered_row.dart';
-import '../../../design_system/widgets/q_progress_bar.dart';
-import '../../../design_system/widgets/q_screen.dart';
 
-/// A-03 · Pre-flight checklist.
-/// Three numbered items: passport, home address, company idea.
+/// A-03 · Pre-flight checklist. Lives inside [OnboardingShell].
 class PreflightScreen extends StatelessWidget {
   const PreflightScreen({super.key});
 
@@ -23,7 +21,7 @@ class PreflightScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return QScreen(
+    return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
           label: "Start — it's free",
@@ -33,7 +31,6 @@ class PreflightScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          QProgressBar(step: 2, total: 9, onBack: () => context.pop()),
           const QHeader(
             title: 'Before we start —\ngrab these three things.',
             subtitle:

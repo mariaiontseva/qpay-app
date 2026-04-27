@@ -6,11 +6,9 @@ import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_choice_card.dart';
 import '../../../design_system/widgets/q_header.dart';
-import '../../../design_system/widgets/q_progress_bar.dart';
-import '../../../design_system/widgets/q_screen.dart';
+import '../../../design_system/widgets/q_inner_screen.dart';
 
-/// A-02 · Pick your path.
-/// Two options: form a new Ltd (default) or open account for existing one.
+/// A-02 · Pick your path. Lives inside [OnboardingShell].
 class IntentScreen extends StatefulWidget {
   const IntentScreen({super.key});
 
@@ -34,7 +32,7 @@ class _IntentScreenState extends State<IntentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return QScreen(
+    return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
           label: 'Continue',
@@ -44,11 +42,6 @@ class _IntentScreenState extends State<IntentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          QProgressBar(
-            step: 1,
-            total: 9,
-            onBack: () => context.pop(),
-          ),
           const QHeader(
             title: 'What brings you\nto QPay?',
             subtitle: 'Pick what fits.',

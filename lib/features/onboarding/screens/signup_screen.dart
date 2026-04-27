@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../design_system/tokens.dart';
 import '../../../design_system/typography.dart';
@@ -8,9 +8,11 @@ import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_screen.dart';
+import '../../../services/auth_provider.dart';
 
 /// A-01 · Sign up for QPay.
-/// Name, email, +44 mobile. Primary CTA sends the verification code.
+/// Name, email, +44 mobile. CTA calls Supabase phone OTP and navigates to
+/// the verification screen.
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -19,16 +21,50 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final _name = TextEditingController();
   final _email = TextEditingController();
-  final _phone = TextEditingController();
+
+  static final _emailRe = RegExp(r'^[\w.\-+]+@[\w\-]+\.[\w\-.]+$');
+
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _email.addListener(_onChanged);
+  }
 
   @override
   void dispose() {
-    _name.dispose();
     _email.dispose();
-    _phone.dispose();
     super.dispose();
+  }
+
+  void _onChanged() => setState(() => _error = null);
+
+  bool get _emailOk => _emailRe.hasMatch(_email.text.trim());
+  bool get _allValid => _emailOk && !_busy;
+
+  Future<void> _sendCode() async {
+    if (!_allValid) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final email = _email.text.trim();
+    try {
+      await AuthProvider.of(context).sendOtp(email);
+      if (!mounted) return;
+      context.push('/verify', extra: <String, String>{'email': email});
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = '${e.statusCode ?? ''} ${e.message}'.trim());
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = 'Network or unknown error: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -36,9 +72,17 @@ class _SignupScreenState extends State<SignupScreen> {
     return QScreen(
       ambient: true,
       bottom: QBottomBar(
-        child: QButton(
-          label: 'Send verification code',
-          onPressed: () => context.push('/intent'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            QButton(
+              label: _busy ? 'Sending…' : 'Send verification code',
+              onPressed: _allValid ? _sendCode : null,
+            ),
+            const SizedBox(height: QPayTokens.s4),
+            const Center(child: _TermsFooter()),
+          ],
         ),
       ),
       child: Column(
@@ -47,45 +91,27 @@ class _SignupScreenState extends State<SignupScreen> {
           const _TopBar(),
           const _Hero(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                QField(
-                  label: 'Full name',
-                  controller: _name,
-                  placeholder: 'Your name',
-                  autofillHint: AutofillHints.name,
-                  keyboardType: TextInputType.name,
-                ),
-                const SizedBox(height: 10),
-                QField(
-                  label: 'Email',
-                  controller: _email,
-                  placeholder: 'you@example.com',
-                  autofillHint: AutofillHints.email,
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 10),
-                QField(
-                  label: 'Mobile',
-                  controller: _phone,
-                  placeholder: '7123 456789',
-                  hint: "We'll text a 6-digit code",
-                  autofillHint: AutofillHints.telephoneNumberNational,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9 ]')),
-                  ],
-                  prefix: const _GbPrefix(),
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+            child: QField(
+              label: 'Email',
+              controller: _email,
+              placeholder: 'you@example.com',
+              hint: "We'll email you an 8-digit code",
+              autofillHint: AutofillHints.email,
+              keyboardType: TextInputType.emailAddress,
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(24, 12, 24, 0),
-            child: _TermsFooter(),
-          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: Text(
+                _error!,
+                style: QPayType.heroSub.copyWith(
+                  color: QPayTokens.alert,
+                  fontSize: 13,
+                ),
+              ),
+            ),
           const SizedBox(height: QPayTokens.s6),
         ],
       ),
@@ -102,18 +128,34 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
       child: Row(
         children: [
-          Text('QPay', style: QPayType.wordmark),
+          // Long-press pushes the full onboarding chain so the back arrow
+          // walks through each step. Dev shortcut — remove once the real
+          // auth chain is wired.
+          GestureDetector(
+            onLongPress: () async {
+              final router = GoRouter.of(context);
+              for (final path in ['/intent', '/preflight', '/solo', '/name']) {
+                router.push(path);
+                await Future<void>.delayed(const Duration(milliseconds: 40));
+                if (!context.mounted) return;
+              }
+            },
+            child: Text('QPay', style: QPayType.wordmark),
+          ),
           const Spacer(),
-          Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: QPayTokens.cardBase.withValues(alpha: 0.75),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
               borderRadius: BorderRadius.circular(QPayTokens.rPill),
-              border: Border.all(color: QPayTokens.border),
+              onTap: () => context.push('/signin'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: QPayTokens.s3,
+                  vertical: QPayTokens.s2 + 2,
+                ),
+                child: Text('Sign in', style: QPayType.signInChip),
+              ),
             ),
-            child: Text('Sign in', style: QPayType.signInChip),
           ),
         ],
       ),
@@ -126,44 +168,19 @@ class _Hero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(24, 18, 24, 4),
-      child: _HeroText(),
-    );
-  }
-}
-
-class _HeroText extends StatelessWidget {
-  const _HeroText();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Business banking, next level.', style: QPayType.heroTitle),
-        const SizedBox(height: QPayTokens.s3),
-        Text(
-          'Form your Ltd and open your account in one go.',
-          style: QPayType.heroSub,
-        ),
-      ],
-    );
-  }
-}
-
-class _GbPrefix extends StatelessWidget {
-  const _GbPrefix();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text('🇬🇧', style: TextStyle(fontSize: 16, height: 1)),
-        const SizedBox(width: 6),
-        Text('+44', style: QPayType.fieldPrefix),
-      ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Business banking, next level.', style: QPayType.heroTitle),
+          const SizedBox(height: QPayTokens.s3),
+          Text(
+            'Form your Ltd and open your account in one go.',
+            style: QPayType.heroSub,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -184,6 +201,7 @@ class _TermsFooter extends StatelessWidget {
           const TextSpan(text: '.'),
         ],
       ),
+      textAlign: TextAlign.center,
     );
   }
 }

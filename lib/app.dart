@@ -1,42 +1,110 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'design_system/tokens.dart';
+import 'features/onboarding/onboarding_shell.dart';
+import 'features/onboarding/screens/full_name_screen.dart';
 import 'features/onboarding/screens/intent_screen.dart';
 import 'features/onboarding/screens/name_screen.dart';
 import 'features/onboarding/screens/preflight_screen.dart';
+import 'features/onboarding/screens/signin_screen.dart';
 import 'features/onboarding/screens/signup_screen.dart';
 import 'features/onboarding/screens/solo_screen.dart';
+import 'features/onboarding/screens/verify_otp_screen.dart';
+import 'services/auth_provider.dart';
+import 'services/auth_service.dart';
+import 'services/backend_provider.dart';
+import 'services/backend_service.dart';
+import 'services/companies_house_provider.dart';
+import 'services/companies_house_service.dart';
+
+/// iOS-style horizontal slide for top-level routes (/signup ↔ /verify).
+CupertinoPage<void> _slidePage(Widget child) => CupertinoPage<void>(
+      child: child,
+    );
+
+/// 180-ms cross-fade used between the four screens inside [OnboardingShell].
+/// The shell (top bar + progress indicator) stays put; only the body fades.
+CustomTransitionPage<void> _innerFade(Widget child) =>
+    CustomTransitionPage<void>(
+      child: child,
+      transitionDuration: const Duration(milliseconds: 180),
+      reverseTransitionDuration: const Duration(milliseconds: 140),
+      transitionsBuilder: (_, animation, __, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      ),
+    );
 
 final GoRouter _router = GoRouter(
   initialLocation: '/signup',
   routes: <RouteBase>[
     GoRoute(
       path: '/signup',
-      builder: (_, __) => const SignupScreen(),
+      pageBuilder: (_, __) => _slidePage(const SignupScreen()),
     ),
     GoRoute(
-      path: '/intent',
-      builder: (_, __) => const IntentScreen(),
+      path: '/signin',
+      pageBuilder: (_, __) => _slidePage(const SignInScreen()),
     ),
     GoRoute(
-      path: '/preflight',
-      builder: (_, __) => const PreflightScreen(),
+      path: '/verify',
+      pageBuilder: (_, state) {
+        final extra = state.extra as Map<String, String>? ?? const {};
+        return _slidePage(
+          VerifyOtpScreen(email: extra['email'] ?? ''),
+        );
+      },
     ),
     GoRoute(
-      path: '/solo',
-      builder: (_, __) => const SoloScreen(),
+      path: '/full-name',
+      pageBuilder: (_, __) => _slidePage(const FullNameScreen()),
     ),
-    GoRoute(
-      path: '/name',
-      builder: (_, __) => const NameScreen(),
+    // Persistent onboarding chrome (back arrow + progress bar) wraps the
+    // A-02…A-05 screens. `NoTransitionPage` keeps the shell in place while
+    // each nested route cross-fades with `_innerFade`.
+    ShellRoute(
+      pageBuilder: (context, state, child) => NoTransitionPage(
+        child: OnboardingShell(
+          location: state.uri.path,
+          child: child,
+        ),
+      ),
+      routes: [
+        GoRoute(
+          path: '/intent',
+          pageBuilder: (_, __) => _innerFade(const IntentScreen()),
+        ),
+        GoRoute(
+          path: '/preflight',
+          pageBuilder: (_, __) => _innerFade(const PreflightScreen()),
+        ),
+        GoRoute(
+          path: '/solo',
+          pageBuilder: (_, __) => _innerFade(const SoloScreen()),
+        ),
+        GoRoute(
+          path: '/name',
+          pageBuilder: (_, __) => _innerFade(const NameScreen()),
+        ),
+      ],
     ),
   ],
 );
 
 class QPayApp extends StatelessWidget {
-  const QPayApp({super.key});
+  final AuthService authService;
+  final CompaniesHouseService companiesHouseService;
+  final BackendService backendService;
+
+  const QPayApp({
+    super.key,
+    required this.authService,
+    required this.companiesHouseService,
+    required this.backendService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,20 +116,29 @@ class QPayApp extends StatelessWidget {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
-    return MaterialApp.router(
-      title: 'QPay',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: QPayTokens.canvas,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: QPayTokens.accent,
-          primary: QPayTokens.ink,
-          surface: QPayTokens.canvas,
+    return AuthProvider(
+      service: authService,
+      child: CompaniesHouseProvider(
+        service: companiesHouseService,
+        child: BackendProvider(
+          service: backendService,
+          child: MaterialApp.router(
+        title: 'QPay',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          scaffoldBackgroundColor: QPayTokens.canvas,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: QPayTokens.accent,
+            primary: QPayTokens.ink,
+            surface: QPayTokens.canvas,
+          ),
+          splashFactory: InkRipple.splashFactory,
         ),
-        splashFactory: InkRipple.splashFactory,
+            routerConfig: _router,
+          ),
+        ),
       ),
-      routerConfig: _router,
     );
   }
 }

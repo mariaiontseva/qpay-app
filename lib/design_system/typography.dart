@@ -39,16 +39,16 @@ class QPayType {
       );
 
   // ───── Display / headings ─────
-  // Hero title — 800 26/1.08 letter-spacing -0.03em
+  // Hero title — 800 34/1.08, consistent across every step.
   static TextStyle get heroTitle => _sans(
-        size: 26,
+        size: 34,
         weight: FontWeight.w800,
         lineHeight: 1.08,
-        tracking: -0.78, // -0.03em of 26px
+        tracking: -1.02,
       );
 
   static TextStyle get heroSub => _sans(
-        size: 13,
+        size: 15,
         weight: FontWeight.w400,
         lineHeight: 1.45,
         color: QPayTokens.ink2,
@@ -78,29 +78,29 @@ class QPayType {
       );
 
   // ───── Fields ─────
+  // Label intentionally reuses the subtitle style — same weight + color.
   static TextStyle get fieldLabel => _sans(
-        size: 11,
-        weight: FontWeight.w500,
-        lineHeight: 1.3,
-        tracking: 0.22,
-        color: QPayTokens.ink3,
+        size: 15,
+        weight: FontWeight.w400,
+        lineHeight: 1.45,
+        color: QPayTokens.ink2,
       );
 
   static TextStyle get fieldInput => _sans(
-        size: 15,
+        size: 17,
         weight: FontWeight.w500,
         lineHeight: 1.4,
       );
 
   static TextStyle get fieldPrefix => _sans(
-        size: 15,
+        size: 17,
         weight: FontWeight.w500,
         lineHeight: 1,
         color: QPayTokens.ink2,
       );
 
   static TextStyle get fieldHint => _sans(
-        size: 12,
+        size: 13,
         weight: FontWeight.w400,
         lineHeight: 1.4,
         color: QPayTokens.ink3,
@@ -124,7 +124,7 @@ class QPayType {
       );
 
   static TextStyle get signInChip => _sans(
-        size: 12,
+        size: 15,
         weight: FontWeight.w600,
         lineHeight: 1,
       );

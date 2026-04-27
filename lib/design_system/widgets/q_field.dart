@@ -64,11 +64,11 @@ class _QFieldState extends State<QField> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOut,
-          constraints: const BoxConstraints(minHeight: 48),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          constraints: const BoxConstraints(minHeight: 58),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: QPayTokens.cardBase.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(QPayTokens.rMd),
+            borderRadius: BorderRadius.circular(QPayTokens.rMd + 2),
             border: Border.all(
               color: focused ? QPayTokens.accent : QPayTokens.border,
               width: 1.5,
@@ -102,12 +102,15 @@ class _QFieldState extends State<QField> {
                       : null,
                   style: QPayType.fieldInput,
                   cursorColor: QPayTokens.ink,
+                  // Scroll the field well above the keyboard so the CTA has
+                  // room to sit below. 140pt ≈ keyboard height + bottom-bar.
+                  scrollPadding: const EdgeInsets.only(bottom: 140),
                   decoration: InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
                     focusedBorder: InputBorder.none,
                     enabledBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                     hintText: widget.placeholder,
                     hintStyle: QPayType.fieldInput.copyWith(
                       color: QPayTokens.ink4,

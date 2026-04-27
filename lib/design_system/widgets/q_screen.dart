@@ -24,21 +24,32 @@ class QScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: QPayTokens.canvas,
-      body: SafeArea(
+      // Dismiss the keyboard when the user taps anywhere outside a field or
+      // an interactive control. We absorb the gesture at the root so empty
+      // areas of the screen close the keyboard; taps on buttons / fields
+      // still reach them through normal hit-testing.
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            if (ambient) const Positioned.fill(child: _AmbientBackground()),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    child: child,
+            if (ambient) const _AmbientBackground(),
+            SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      child: child,
+                    ),
                   ),
-                ),
-                if (bottom != null) bottom!,
-              ],
+                  if (bottom != null) bottom!,
+                ],
+              ),
             ),
           ],
         ),

@@ -6,11 +6,9 @@ import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_choice_card.dart';
 import '../../../design_system/widgets/q_header.dart';
-import '../../../design_system/widgets/q_progress_bar.dart';
-import '../../../design_system/widgets/q_screen.dart';
+import '../../../design_system/widgets/q_inner_screen.dart';
 
-/// A-04 · Solo or team?
-/// Default: "Just me" — 92 % of Ltds start this way.
+/// A-04 · Solo or team? Lives inside [OnboardingShell].
 class SoloScreen extends StatefulWidget {
   const SoloScreen({super.key});
 
@@ -34,7 +32,7 @@ class _SoloScreenState extends State<SoloScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return QScreen(
+    return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
           label: 'Continue',
@@ -44,7 +42,6 @@ class _SoloScreenState extends State<SoloScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          QProgressBar(step: 3, total: 9, onBack: () => context.pop()),
           const QHeader(
             title: 'Is this just you,\nor a team?',
             subtitle: 'You can add co-founders or re-issue shares later.',
