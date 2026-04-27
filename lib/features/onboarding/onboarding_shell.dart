@@ -32,6 +32,7 @@ class OnboardingShell extends StatelessWidget {
     '/postcode': 6,
     '/address-results': 6,
     '/address-confirm': 6,
+    '/address-manual': 6,
     '/articles': 7,
   };
 

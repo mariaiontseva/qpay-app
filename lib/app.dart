@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'design_system/tokens.dart';
 import 'features/onboarding/onboarding_shell.dart';
 import 'features/onboarding/screens/address_confirm_screen.dart';
+import 'features/onboarding/screens/address_manual_screen.dart';
 import 'features/onboarding/screens/address_results_screen.dart';
 import 'features/onboarding/screens/articles_screen.dart';
 import 'features/onboarding/screens/full_name_screen.dart';
@@ -130,6 +131,16 @@ final GoRouter _router = GoRouter(
               return _innerFade(const PostcodeScreen());
             }
             return _innerFade(AddressConfirmScreen(address: address));
+          },
+        ),
+        GoRoute(
+          path: '/address-manual',
+          pageBuilder: (_, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? const {};
+            return _innerFade(AddressManualScreen(
+              prefill: extra['prefill'] as UkAddress?,
+              prefillPostcode: extra['prefillPostcode'] as String?,
+            ));
           },
         ),
         GoRoute(

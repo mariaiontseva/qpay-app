@@ -9,7 +9,7 @@ import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
 
-/// A-07 · Registered office choice + private email.
+/// A-07 · Registered office choice + optional private email.
 /// Lives inside [OnboardingShell]. Picking "My own address" + Continue
 /// enters the A-07A → A-07B → A-07C postcode sub-flow.
 enum _OfficeChoice { qpay, own }
@@ -32,15 +32,6 @@ class _RegisteredOfficeScreenState extends State<RegisteredOfficeScreen> {
     super.dispose();
   }
 
-  bool _isEmailValid(String v) {
-    final s = v.trim();
-    if (s.isEmpty) return false;
-    final at = s.indexOf('@');
-    if (at <= 0 || at == s.length - 1) return false;
-    final dot = s.indexOf('.', at);
-    return dot > at + 1 && dot < s.length - 1;
-  }
-
   void _onContinue() {
     if (_choice == _OfficeChoice.qpay) {
       context.push('/articles');
@@ -51,12 +42,11 @@ class _RegisteredOfficeScreenState extends State<RegisteredOfficeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final emailOk = _isEmailValid(_emailCtrl.text);
     return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
           label: 'Continue',
-          onPressed: emailOk ? _onContinue : null,
+          onPressed: _onContinue,
         ),
       ),
       child: Column(
@@ -88,12 +78,11 @@ class _RegisteredOfficeScreenState extends State<RegisteredOfficeScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(24, QPayTokens.s5, 24, 0),
             child: QField(
-              label: 'PRIVATE EMAIL',
+              label: 'PRIVATE EMAIL (OPTIONAL)',
               controller: _emailCtrl,
               placeholder: 'you@example.com',
               keyboardType: TextInputType.emailAddress,
               autofillHint: 'email',
-              onChanged: (_) => setState(() {}),
             ),
           ),
           const SizedBox(height: QPayTokens.s6),

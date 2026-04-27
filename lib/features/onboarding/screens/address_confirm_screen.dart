@@ -40,17 +40,23 @@ class AddressConfirmScreen extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-            child: Text.rich(
-              TextSpan(
-                style: QPayType.statusLine.copyWith(color: QPayTokens.ink2),
-                children: [
-                  const TextSpan(text: 'Wrong building? '),
-                  TextSpan(
-                    text: 'Pick another.',
-                    style: QPayType.statusLineStrong,
-                    recognizer: null,
-                  ),
-                ],
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => context.push(
+                '/address-manual',
+                extra: {'prefill': address},
+              ),
+              child: Text.rich(
+                TextSpan(
+                  style: QPayType.statusLine.copyWith(color: QPayTokens.ink2),
+                  children: [
+                    TextSpan(
+                      text: 'Edit manually',
+                      style: QPayType.statusLineStrong,
+                    ),
+                    const TextSpan(text: '  →'),
+                  ],
+                ),
               ),
             ),
           ),

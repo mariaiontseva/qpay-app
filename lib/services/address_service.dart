@@ -38,11 +38,12 @@ class AddressService {
 
   List<UkAddress> _mock(PostcodeResult pc) {
     final locality = pc.locality.split(',').first.trim();
-    // A small pool keyed by the postcode area; if nothing matches, generate
-    // numbered "<Locality> Road" addresses so every UK postcode resolves to
-    // at least 5 entries.
     final area = pc.postcode.split(' ').first;
-    final pool = _curated[area] ?? _generic(locality);
+    // Only return entries for the small set of curated postcode areas; for
+    // anything else we deliberately return an empty list so the UI can
+    // route the user to manual entry instead of inventing fake addresses.
+    final pool = _curated[area];
+    if (pool == null) return const [];
     return pool
         .map((line1) => UkAddress(
               line1: line1,
@@ -52,15 +53,6 @@ class AddressService {
             ))
         .toList();
   }
-
-  static List<String> _generic(String locality) => [
-        '1 $locality Road',
-        '2 $locality Road',
-        '3 $locality Road',
-        '12 High Street',
-        '14 High Street',
-        '1 Park Lane',
-      ];
 
   // A few well-known postcode areas seeded with real-feeling buildings so the
   // demo looks credible. Add more as needed; falls back to _generic otherwise.

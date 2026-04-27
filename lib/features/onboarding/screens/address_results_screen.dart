@@ -11,7 +11,9 @@ import '../../../services/address_service.dart';
 
 /// A-07B · Address results.
 /// Receives a postcode + list of addresses via go_router `extra`. Each row
-/// is tappable and pushes /address-confirm with the selected address.
+/// pushes /address-confirm with the selected address. When the list is
+/// empty (postcode outside the curated demo set) we route the user
+/// straight at the manual-entry escape hatch.
 class AddressResultsScreen extends StatelessWidget {
   final String postcode;
   final List<UkAddress> addresses;
@@ -24,13 +26,22 @@ class AddressResultsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final empty = addresses.isEmpty;
     final n = addresses.length;
     return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
-          label: 'Try a different postcode',
-          kind: QButtonKind.primary,
-          onPressed: () => context.pop(),
+          label: empty ? 'Type address manually' : 'Try a different postcode',
+          onPressed: () {
+            if (empty) {
+              context.push(
+                '/address-manual',
+                extra: {'prefillPostcode': postcode},
+              );
+            } else {
+              context.pop();
+            }
+          },
         ),
       ),
       child: Column(
@@ -46,9 +57,13 @@ class AddressResultsScreen extends StatelessWidget {
                 style: QPayType.heroSub,
                 children: [
                   TextSpan(
-                    text: '$n match${n == 1 ? '' : 'es'} ',
-                    style: QPayType.heroSub
-                        .copyWith(color: QPayTokens.ink, fontWeight: FontWeight.w700),
+                    text: empty
+                        ? 'No matches '
+                        : '$n match${n == 1 ? '' : 'es'} ',
+                    style: QPayType.heroSub.copyWith(
+                      color: QPayTokens.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   TextSpan(text: 'for $postcode'),
                 ],
@@ -56,7 +71,18 @@ class AddressResultsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: QPayTokens.s4),
-          ...addresses.map((a) => Padding(
+          if (empty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Text(
+                "We couldn't auto-find buildings for this postcode. "
+                'Type your address manually below.',
+                style: QPayType.optionSub,
+              ),
+            )
+          else ...[
+            ...addresses.map(
+              (a) => Padding(
                 padding:
                     const EdgeInsets.fromLTRB(24, 0, 24, QPayTokens.s3),
                 child: _AddressRow(
@@ -66,7 +92,33 @@ class AddressResultsScreen extends StatelessWidget {
                     extra: {'address': a},
                   ),
                 ),
-              )),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () => context.push(
+                  '/address-manual',
+                  extra: {'prefillPostcode': postcode},
+                ),
+                child: Text.rich(
+                  TextSpan(
+                    style:
+                        QPayType.statusLine.copyWith(color: QPayTokens.ink2),
+                    children: [
+                      const TextSpan(text: 'Address not listed? '),
+                      TextSpan(
+                        text: 'Edit manually',
+                        style: QPayType.statusLineStrong,
+                      ),
+                      const TextSpan(text: '  →'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: QPayTokens.s5),
         ],
       ),
