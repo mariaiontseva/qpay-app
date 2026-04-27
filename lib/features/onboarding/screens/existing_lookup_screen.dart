@@ -79,6 +79,8 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
           d.status == 'removed';
       setState(() => _state =
           blocked ? _LookupState.blocked : _LookupState.found);
+      // Drop the keyboard so the preview card is fully visible.
+      FocusManager.instance.primaryFocus?.unfocus();
     } on CompanyNotFoundException {
       if (!mounted || s != _seq) return;
       setState(() => _state = _LookupState.notFound);
