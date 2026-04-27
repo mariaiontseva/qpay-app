@@ -11,7 +11,7 @@ class UkAddress {
   /// Locality, e.g. "London".
   final String locality;
   final String postcode;
-  /// Companies House jurisdiction derived from the postcode.
+  /// Companies House jurisdiction derived from the postcode country.
   final ChJurisdiction jurisdiction;
 
   const UkAddress({
@@ -24,46 +24,135 @@ class UkAddress {
 
 /// Resolves a UK postcode to a list of pickable addresses.
 ///
-/// Uses postcodes.io to validate and derive jurisdiction, then queries the
-/// public Overpass API (OpenStreetMap) for real buildings tagged with
-/// `addr:postcode = <pc>`. Coverage is partial — central UK has good data,
-/// rural areas can return zero — so callers must handle the empty-list
-/// case (UI routes those to manual entry).
+/// Primary path uses Ideal Postcodes (licensed PAF data) when an API key is
+/// supplied via `--dart-define=IDEAL_POSTCODES_KEY=...`. If the key is
+/// missing we fall back to a free Overpass (OpenStreetMap) lookup, which
+/// has partial UK coverage. Empty list = caller should route to manual
+/// entry.
 class AddressService {
+  final String? _idealKey;
   final PostcodeService _postcodeService;
   final http.Client _client;
 
-  AddressService({PostcodeService? postcodeService, http.Client? client})
-      : _postcodeService = postcodeService ?? PostcodeService(),
+  AddressService({
+    String? idealPostcodesKey,
+    PostcodeService? postcodeService,
+    http.Client? client,
+  })  : _idealKey = _resolveKey(idealPostcodesKey),
+        _postcodeService = postcodeService ?? PostcodeService(),
         _client = client ?? http.Client();
 
+  static const String _envKey =
+      String.fromEnvironment('IDEAL_POSTCODES_KEY');
+
+  static String? _resolveKey(String? passed) {
+    if (passed != null && passed.isNotEmpty) return passed;
+    if (_envKey.isNotEmpty) return _envKey;
+    return null;
+  }
+
+  static const String _idealBase = 'https://api.ideal-postcodes.co.uk/v1';
   static const String _overpassUrl = 'https://overpass-api.de/api/interpreter';
-  static const Duration _overpassTimeout = Duration(seconds: 12);
+  static const Duration _timeout = Duration(seconds: 12);
 
   Future<List<UkAddress>> findAddresses(String postcode) async {
-    final pc = await _postcodeService.lookup(postcode);
-    final locality = pc.locality.split(',').first.trim();
+    if (_idealKey != null) {
+      final fromIdeal = await _findIdeal(postcode);
+      if (fromIdeal.isNotEmpty) return fromIdeal;
+    }
+    return _findOverpass(postcode);
+  }
 
-    final query =
-        '[out:json][timeout:10];nwr["addr:postcode"="${pc.postcode}"];out tags;';
+  // ───── Ideal Postcodes (licensed PAF) ─────
+
+  Future<List<UkAddress>> _findIdeal(String postcode) async {
     try {
+      final encoded = Uri.encodeComponent(postcode.trim());
       final res = await _client
-          .post(
-            Uri.parse(_overpassUrl),
-            body: query,
-          )
-          .timeout(_overpassTimeout);
+          .get(Uri.parse('$_idealBase/postcodes/$encoded?api_key=$_idealKey'))
+          .timeout(_timeout);
+      if (res.statusCode != 200) return const [];
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      final code = body['code'];
+      if (code != 2000) return const [];
+      final results = (body['result'] as List<dynamic>? ?? const <dynamic>[])
+          .cast<Map<String, dynamic>>();
+      if (results.isEmpty) return const [];
+
+      return results.map(_idealToAddress).whereType<UkAddress>().toList()
+        ..sort((a, b) => _addressSortKey(a).compareTo(_addressSortKey(b)));
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  static UkAddress? _idealToAddress(Map<String, dynamic> a) {
+    final l1 = (a['line_1'] as String? ?? '').trim();
+    final l2 = (a['line_2'] as String? ?? '').trim();
+    final l3 = (a['line_3'] as String? ?? '').trim();
+    final parts = [l1, l2, l3].where((s) => s.isNotEmpty).toList();
+    if (parts.isEmpty) return null;
+    final line1 = parts.join(', ');
+
+    final town = (a['post_town'] as String? ?? '').trim();
+    final county = (a['county'] as String? ?? '').trim();
+    final locality = town.isNotEmpty
+        ? _titleCase(town)
+        : (county.isNotEmpty ? county : '');
+    final pc = (a['postcode'] as String? ?? '').trim();
+    final country = (a['country'] as String? ?? '').trim();
+    return UkAddress(
+      line1: line1,
+      locality: locality,
+      postcode: pc,
+      jurisdiction: _mapCountry(country),
+    );
+  }
+
+  static String _titleCase(String s) {
+    return s
+        .toLowerCase()
+        .split(' ')
+        .map((w) => w.isEmpty
+            ? w
+            : w[0].toUpperCase() + (w.length > 1 ? w.substring(1) : ''))
+        .join(' ');
+  }
+
+  static ChJurisdiction _mapCountry(String country) {
+    switch (country) {
+      case 'Scotland':
+        return ChJurisdiction.scotland;
+      case 'Northern Ireland':
+        return ChJurisdiction.northernIreland;
+      case 'England':
+      case 'Wales':
+      default:
+        return ChJurisdiction.englandAndWales;
+    }
+  }
+
+  // ───── Overpass / OSM fallback ─────
+
+  Future<List<UkAddress>> _findOverpass(String postcode) async {
+    try {
+      final pc = await _postcodeService.lookup(postcode);
+      final locality = pc.locality.split(',').first.trim();
+      final query =
+          '[out:json][timeout:10];nwr["addr:postcode"="${pc.postcode}"];out tags;';
+      final res = await _client
+          .post(Uri.parse(_overpassUrl), body: query)
+          .timeout(_timeout);
       if (res.statusCode != 200) return const [];
       final body = jsonDecode(res.body) as Map<String, dynamic>;
       final elements =
           (body['elements'] as List<dynamic>? ?? const <dynamic>[])
               .cast<Map<String, dynamic>>();
-
       final out = <UkAddress>[];
       final seen = <String>{};
       for (final el in elements) {
         final tags = (el['tags'] as Map<String, dynamic>? ?? const {});
-        final line1 = _composeLine1(tags);
+        final line1 = _composeOsmLine1(tags);
         if (line1 == null || line1.trim().isEmpty) continue;
         if (!seen.add(line1.toLowerCase())) continue;
         out.add(UkAddress(
@@ -73,16 +162,14 @@ class AddressService {
           jurisdiction: pc.jurisdiction,
         ));
       }
-      // Sort: numeric house numbers first (ascending), then alpha.
       out.sort((a, b) => _addressSortKey(a).compareTo(_addressSortKey(b)));
       return out;
     } catch (_) {
-      // Network / parse failure → empty so UI falls through to manual entry.
       return const [];
     }
   }
 
-  static String? _composeLine1(Map<String, dynamic> tags) {
+  static String? _composeOsmLine1(Map<String, dynamic> tags) {
     final num_ = (tags['addr:housenumber'] as String?)?.trim();
     final street = (tags['addr:street'] as String?)?.trim();
     final houseName = (tags['addr:housename'] as String?)?.trim();
@@ -98,6 +185,8 @@ class AddressService {
     if (street != null && street.isNotEmpty) return street;
     return null;
   }
+
+  // ───── Common ─────
 
   static String _addressSortKey(UkAddress a) {
     final m = RegExp(r'^(\d+)').firstMatch(a.line1);
