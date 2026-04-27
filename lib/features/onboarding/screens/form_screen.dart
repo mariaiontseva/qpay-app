@@ -8,10 +8,10 @@ import '../../../design_system/widgets/q_screen.dart';
 import '../../../services/formation_state.dart';
 
 /// A-14 · Paywall + form CTA. Top-level route.
-/// Hero £100 today (Companies House pass-through, £0 QPay fee), with the
-/// £15/month subscription disclosed underneath but not charged today.
-/// In production the bottom CTA hands off to Apple Pay / Stripe Payment
-/// Sheet — we render the Apple-Pay-style button now and connect later.
+/// Light, paper-feel design — no dark content blocks. Hero £100 is the
+/// only one-off charge; £15/month for QPay Business is disclosed but not
+/// charged today (first month free). The bottom Apple-Pay-style CTA is
+/// dark by design — Apple HIG requires the dark variant.
 class FormScreen extends StatelessWidget {
   const FormScreen({super.key});
 
@@ -27,13 +27,10 @@ class FormScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ApplePayButton(
-              onPressed: () => context.push('/filing'),
-            ),
+            _ApplePayButton(onPressed: () => context.push('/filing')),
             const SizedBox(height: 10),
             Text(
-              'Authentic with Face ID. Charged when Companies House '
-              'returns the certificate.',
+              'Charged when Companies House returns the certificate.',
               textAlign: TextAlign.center,
               style: QPayType.termsFooter,
             ),
@@ -71,15 +68,13 @@ class FormScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
-          // ───── Hero pricing card ─────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: const _HeroPricing(),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: _PricingCard(),
           ),
           const SizedBox(height: 16),
-          // ───── Whats included ─────
           const Padding(
-            padding: EdgeInsets.fromLTRB(28, 6, 28, 0),
+            padding: EdgeInsets.fromLTRB(24, 6, 24, 0),
             child: _IncludesList(),
           ),
           const SizedBox(height: QPayTokens.s6),
@@ -89,16 +84,17 @@ class FormScreen extends StatelessWidget {
   }
 }
 
-class _HeroPricing extends StatelessWidget {
-  const _HeroPricing();
+class _PricingCard extends StatelessWidget {
+  const _PricingCard();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
       decoration: BoxDecoration(
-        color: QPayTokens.ink,
+        color: QPayTokens.cardBase,
         borderRadius: BorderRadius.circular(QPayTokens.rCard + 4),
+        border: Border.all(color: QPayTokens.border, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,8 +102,9 @@ class _HeroPricing extends StatelessWidget {
           Text(
             'TODAY',
             style: QPayType.fieldLabel.copyWith(
-              color: QPayTokens.ink4,
+              color: QPayTokens.ink3,
               fontSize: 10.5,
+              letterSpacing: 1.4,
             ),
           ),
           const SizedBox(height: 4),
@@ -119,7 +116,6 @@ class _HeroPricing extends StatelessWidget {
                 style: QPayType.heroTitle.copyWith(
                   fontSize: 56,
                   height: 1,
-                  color: const Color(0xFFFFFCF5),
                 ),
               ),
               const SizedBox(width: 10),
@@ -127,156 +123,138 @@ class _HeroPricing extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   'one-off',
-                  style: QPayType.heroSub.copyWith(
-                    color: QPayTokens.ink4,
-                    fontSize: 14,
-                  ),
+                  style: QPayType.heroSub.copyWith(fontSize: 14),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          Container(height: 1, color: QPayTokens.border),
           const SizedBox(height: 14),
-          Container(height: 1, color: Colors.white.withValues(alpha: 0.10)),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'CH',
-                  style: QPayType.optionTitle.copyWith(
-                    fontSize: 11,
-                    color: const Color(0xFFFFFCF5),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Companies House filing fee',
-                      style: QPayType.optionTitle.copyWith(
-                        color: const Color(0xFFFFFCF5),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Statutory · pass-through to GOV.UK',
-                      style: QPayType.heroSub.copyWith(
-                        color: QPayTokens.ink4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                '£100',
-                style: QPayType.optionTitle.copyWith(
-                  color: const Color(0xFFFFFCF5),
-                ),
-              ),
-            ],
+          const _LineItem(
+            initials: 'CH',
+            title: 'Companies House filing fee',
+            sub: 'Statutory · pass-through to GOV.UK',
+            valueText: '£100',
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: const Text(
-                  'Q',
-                  style: TextStyle(
-                    color: Color(0xFFFFFCF5),
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'QPay formation fee',
-                      style: QPayType.optionTitle.copyWith(
-                        color: const Color(0xFFFFFCF5),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'No hidden charges. Ever.',
-                      style: QPayType.heroSub.copyWith(
-                        color: QPayTokens.ink4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                'FREE',
-                style: QPayType.optionTitle.copyWith(
-                  color: QPayTokens.accent,
-                ),
-              ),
-            ],
+          const _LineItem(
+            initials: 'Q',
+            title: 'QPay formation fee',
+            sub: 'No hidden charges. Ever.',
+            valueText: 'FREE',
+            valueAccent: true,
           ),
           const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(QPayTokens.rCard),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.10),
-              ),
+          const _MonthlyPanel(),
+        ],
+      ),
+    );
+  }
+}
+
+class _LineItem extends StatelessWidget {
+  final String initials;
+  final String title;
+  final String sub;
+  final String valueText;
+  final bool valueAccent;
+
+  const _LineItem({
+    required this.initials,
+    required this.title,
+    required this.sub,
+    required this.valueText,
+    this.valueAccent = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: QPayTokens.canvas,
+            shape: BoxShape.circle,
+            border: Border.all(color: QPayTokens.border, width: 1),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            initials,
+            style: QPayType.optionTitle.copyWith(
+              fontSize: 11,
+              color: QPayTokens.ink2,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
             ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_rounded,
-                  color: const Color(0xFFFFFCF5).withValues(alpha: 0.85),
-                  size: 16,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: QPayType.optionTitle),
+              const SizedBox(height: 2),
+              Text(sub, style: QPayType.heroSub),
+            ],
+          ),
+        ),
+        Text(
+          valueText,
+          style: QPayType.optionTitle.copyWith(
+            color: valueAccent ? QPayTokens.accent : QPayTokens.ink,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MonthlyPanel extends StatelessWidget {
+  const _MonthlyPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: QPayTokens.successBg,
+        borderRadius: BorderRadius.circular(QPayTokens.rCard),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.calendar_today_rounded,
+            color: QPayTokens.success,
+            size: 16,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                style: QPayType.heroSub.copyWith(
+                  color: QPayTokens.success,
+                  height: 1.35,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      style: QPayType.heroSub.copyWith(
-                        color: const Color(0xFFFFFCF5),
-                        height: 1.35,
-                      ),
-                      children: [
-                        const TextSpan(text: 'Then '),
-                        TextSpan(
-                          text: '£15 / month',
-                          style: QPayType.optionTitle.copyWith(
-                            color: const Color(0xFFFFFCF5),
-                            fontSize: 14,
-                          ),
-                        ),
-                        const TextSpan(
-                          text:
-                              ' from next month for QPay Business — first month on us. Cancel anytime.',
-                        ),
-                      ],
+                children: [
+                  const TextSpan(text: 'Then '),
+                  TextSpan(
+                    text: '£15 / month',
+                    style: QPayType.optionTitle.copyWith(
+                      color: QPayTokens.success,
+                      fontSize: 14,
                     ),
                   ),
-                ),
-              ],
+                  const TextSpan(
+                    text:
+                        ' from next month for QPay Business — first month on us. Cancel anytime.',
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -319,9 +297,7 @@ class _IncludeRow extends StatelessWidget {
             size: 18,
           ),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text(text, style: QPayType.optionSub),
-          ),
+          Expanded(child: Text(text, style: QPayType.optionSub)),
         ],
       ),
     );
@@ -347,17 +323,12 @@ class _ApplePayButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  'Pay  ',
-                  style: QPayType.buttonLg.copyWith(fontSize: 17),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: const Icon(
-                    Icons.apple,
-                    size: 22,
-                    color: Color(0xFFFFFCF5),
-                  ),
+                Text('Pay  ',
+                    style: QPayType.buttonLg.copyWith(fontSize: 17)),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 2),
+                  child: Icon(Icons.apple,
+                      size: 22, color: Color(0xFFFFFCF5)),
                 ),
                 Text(
                   ' Pay  ·  £100',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../design_system/tokens.dart';
 import '../../../design_system/typography.dart';
@@ -7,12 +8,10 @@ import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_screen.dart';
 import '../../../services/formation_state.dart';
 import '../../../services/postcode_service.dart';
-import 'package:go_router/go_router.dart';
 
 /// A-16 · Live. Top-level terminal route.
-/// Premium "your company is real" moment — dark hero card with the
-/// brand-new company number, date, and jurisdiction, framed like a
-/// digital certificate. CTA pivots straight into the QPay account.
+/// Light, paper-feel "certificate" treatment — cream cardBase with a
+/// soft accent eyebrow and a gentle ring border, no dark blocks.
 class LiveScreen extends StatelessWidget {
   const LiveScreen({super.key});
 
@@ -53,7 +52,6 @@ class LiveScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Eyebrow celebrate row
             Row(
               children: [
                 _LiveBadge(),
@@ -65,7 +63,6 @@ class LiveScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 22),
-            // ───── Certificate hero ─────
             _CertificateCard(
               companyName: companyName,
               companyNumber: '15837421',
@@ -145,17 +142,11 @@ class _CertificateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
       decoration: BoxDecoration(
-        color: QPayTokens.ink,
+        color: QPayTokens.cardBase,
         borderRadius: BorderRadius.circular(QPayTokens.rCard + 4),
-        boxShadow: [
-          BoxShadow(
-            color: QPayTokens.ink.withValues(alpha: 0.18),
-            blurRadius: 22,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: QPayTokens.borderStrong, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,32 +159,35 @@ class _CertificateCard extends StatelessWidget {
                   color: QPayTokens.accent,
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
+                  letterSpacing: 1.4,
                 ),
               ),
               const Spacer(),
-              const _CrownEmoji(),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: QPayTokens.canvas,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: QPayTokens.border, width: 1),
+                ),
+                alignment: Alignment.center,
+                child: const Text('👑', style: TextStyle(fontSize: 13)),
+              ),
             ],
           ),
           const SizedBox(height: 14),
           Text(
             companyName,
-            style: QPayType.heroTitle.copyWith(
-              fontSize: 30,
-              height: 1.05,
-              color: const Color(0xFFFFFCF5),
-            ),
+            style: QPayType.heroTitle.copyWith(fontSize: 28, height: 1.05),
           ),
           const SizedBox(height: 6),
           Text(
             'Companies House · United Kingdom',
-            style: QPayType.heroSub.copyWith(
-              color: QPayTokens.ink4,
-              fontSize: 13,
-            ),
+            style: QPayType.heroSub.copyWith(fontSize: 13),
           ),
-          const SizedBox(height: 20),
-          Container(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+          const SizedBox(height: 18),
+          Container(height: 1, color: QPayTokens.border),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,30 +208,9 @@ class _CertificateCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          _Stat(
-            label: 'JURISDICTION',
-            value: jurisdiction,
-          ),
+          _Stat(label: 'JURISDICTION', value: jurisdiction),
         ],
       ),
-    );
-  }
-}
-
-class _CrownEmoji extends StatelessWidget {
-  const _CrownEmoji();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.10),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: const Text('👑', style: TextStyle(fontSize: 14)),
     );
   }
 }
@@ -260,7 +233,7 @@ class _Stat extends StatelessWidget {
         Text(
           label,
           style: QPayType.fieldLabel.copyWith(
-            color: QPayTokens.ink4,
+            color: QPayTokens.ink3,
             fontSize: 10,
             letterSpacing: 1.2,
           ),
@@ -269,8 +242,8 @@ class _Stat extends StatelessWidget {
         Text(
           value,
           style: (mono ? QPayType.progressNum : QPayType.optionTitle).copyWith(
-            color: const Color(0xFFFFFCF5),
-            fontSize: mono ? 16 : 16,
+            color: QPayTokens.ink,
+            fontSize: 16,
             letterSpacing: mono ? 1.1 : -0.2,
           ),
         ),
