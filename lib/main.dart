@@ -6,6 +6,7 @@ import 'app.dart';
 import 'services/auth_service.dart';
 import 'services/backend_service.dart';
 import 'services/companies_house_service.dart';
+import 'services/formation_state.dart';
 
 const String _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const String _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
@@ -36,6 +37,7 @@ Future<void> main() async {
         _chApiKey.isNotEmpty ? _chApiKey : null,
       ),
       backendService: BackendService(_backendUrl),
+      formationState: FormationState(),
     ),
   );
 }

@@ -5,6 +5,8 @@ import '../../../design_system/typography.dart';
 import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_screen.dart';
+import '../../../services/formation_state.dart';
+import '../../../services/postcode_service.dart';
 
 /// A-16 · Live. Top-level terminal route.
 /// Company is now incorporated. Real CH would return company number,
@@ -14,6 +16,13 @@ class LiveScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = FormationProvider.of(context);
+    final companyName = s.filedCompanyName == '—'
+        ? 'Your company'
+        : s.filedCompanyName;
+    final jurisdiction = s.useQPayOffice
+        ? 'England and Wales'
+        : (s.ownAddress?.jurisdiction.label ?? 'England and Wales');
     return QScreen(
       bottom: QBottomBar(
         child: Column(
@@ -58,7 +67,7 @@ class LiveScreen extends StatelessWidget {
             ),
             const SizedBox(height: 22),
             Text(
-              'Orca Design Ltd\nis live.',
+              '$companyName\nis live.',
               textAlign: TextAlign.center,
               style: QPayType.heroTitle.copyWith(fontSize: 28),
             ),
@@ -71,7 +80,7 @@ class LiveScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const _Row(label: 'Company number', value: '15837421', mono: true),
             const _Row(label: 'Incorporated', value: '27 Apr 2026'),
-            const _Row(label: 'Jurisdiction', value: 'England and Wales'),
+            _Row(label: 'Jurisdiction', value: jurisdiction),
           ],
         ),
       ),

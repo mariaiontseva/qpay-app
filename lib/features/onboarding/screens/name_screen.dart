@@ -12,6 +12,7 @@ import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
 import '../../../services/companies_house_provider.dart';
 import '../../../services/companies_house_service.dart';
+import '../../../services/formation_state.dart';
 
 /// A-05 · Name your company. Lives inside [OnboardingShell].
 /// Live availability check against the Companies House Public Data API,
@@ -40,8 +41,16 @@ class _NameScreenState extends State<NameScreen> {
   void initState() {
     super.initState();
     _ctrl.addListener(_onTextChanged);
-    // Kick off an initial check for the prefilled sample name.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _schedule());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final stored = FormationProvider.read(context).companyName;
+    if (stored.isNotEmpty && _ctrl.text.isEmpty) {
+      _ctrl.text = stored;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _schedule());
+    }
   }
 
   @override
@@ -101,8 +110,13 @@ class _NameScreenState extends State<NameScreen> {
       bottom: QBottomBar(
         child: QButton(
           label: 'Continue',
-          onPressed:
-              _canContinue ? () => context.push('/sic') : null,
+          onPressed: _canContinue
+              ? () {
+                  FormationProvider.read(context)
+                      .setCompanyName(_ctrl.text.trim());
+                  context.push('/sic');
+                }
+              : null,
         ),
       ),
       child: Column(

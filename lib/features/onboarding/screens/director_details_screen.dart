@@ -7,6 +7,7 @@ import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
+import '../../../services/formation_state.dart';
 
 /// A-10 · Director details. Lives inside [OnboardingShell].
 /// Editable card with the minimum legally-required fields per Companies
@@ -17,6 +18,13 @@ class DirectorDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = FormationProvider.of(context);
+    final fullName = s.userName.trim().isEmpty ? '—' : s.userName.trim();
+    final serviceAddress = s.useQPayOffice
+        ? 'QPay virtual office'
+        : (s.ownAddress != null
+            ? '${s.ownAddress!.line1}, ${s.ownAddress!.locality} ${s.ownAddress!.postcode}'
+            : '—');
     return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
@@ -35,23 +43,24 @@ class DirectorDetailsScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: const [
-                _Field(label: 'Full name', value: 'John Donn'),
-                _Field(
+              children: [
+                _Field(label: 'Full name', value: fullName),
+                const _Field(
                   label: 'Date of birth',
                   value: '12 May 1988',
                   hint: 'Private',
                 ),
-                _Field(label: 'Nationality', value: 'British'),
-                _Field(label: 'Country of residence', value: 'United Kingdom'),
-                _Field(
+                const _Field(label: 'Nationality', value: 'British'),
+                const _Field(
+                    label: 'Country of residence', value: 'United Kingdom'),
+                const _Field(
                   label: 'Residential address',
                   value: "45 King's Rd, London SW3 4UH",
                   hint: 'Private',
                 ),
                 _Field(
                   label: 'Service address',
-                  value: 'QPay virtual office',
+                  value: serviceAddress,
                   hint: 'Public',
                 ),
               ],

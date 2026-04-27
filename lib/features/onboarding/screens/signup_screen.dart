@@ -9,6 +9,7 @@ import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_screen.dart';
+import '../../../services/formation_state.dart';
 
 /// A-01 · Sign up step 1: full name.
 /// One question per screen — the QHeader carries the prompt, the QField
@@ -43,7 +44,18 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _onContinue() {
     if (!_ok) return;
-    context.push('/email', extra: {'name': _name.text.trim()});
+    final name = _name.text.trim();
+    FormationProvider.read(context).setUserName(name);
+    context.push('/email', extra: {'name': name});
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final stored = FormationProvider.read(context).userName;
+    if (stored.isNotEmpty && _name.text.isEmpty) {
+      _name.text = stored;
+    }
   }
 
   @override

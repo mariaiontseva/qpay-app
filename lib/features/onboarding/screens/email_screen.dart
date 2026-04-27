@@ -10,6 +10,7 @@ import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_screen.dart';
 import '../../../services/auth_provider.dart';
+import '../../../services/formation_state.dart';
 
 /// A-01b · Sign up step 2: email.
 /// Receives the name via go_router extra. CTA fires the Supabase email-OTP
@@ -52,6 +53,7 @@ class _EmailScreenState extends State<EmailScreen> {
       _error = null;
     });
     final email = _email.text.trim();
+    FormationProvider.read(context).setUserEmail(email);
     try {
       await AuthProvider.of(context).sendOtp(email);
       if (!mounted) return;

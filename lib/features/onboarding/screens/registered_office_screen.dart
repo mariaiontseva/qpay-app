@@ -7,6 +7,7 @@ import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_choice_card.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
+import '../../../services/formation_state.dart';
 
 /// A-07 · Registered office choice. Lives inside [OnboardingShell].
 /// Picking "My own address" + Continue enters the A-07A postcode sub-flow.
@@ -23,11 +24,24 @@ class RegisteredOfficeScreen extends StatefulWidget {
 
 class _RegisteredOfficeScreenState extends State<RegisteredOfficeScreen> {
   _OfficeChoice _choice = _OfficeChoice.qpay;
+  bool _initialised = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialised) return;
+    _initialised = true;
+    final s = FormationProvider.read(context);
+    _choice = s.useQPayOffice ? _OfficeChoice.qpay : _OfficeChoice.own;
+  }
 
   void _onContinue() {
+    final s = FormationProvider.read(context);
     if (_choice == _OfficeChoice.qpay) {
+      s.useQPayOfficeChoice();
       context.push('/articles');
     } else {
+      // Don't overwrite ownAddress yet — postcode/manual screens will set it.
       context.push('/postcode');
     }
   }

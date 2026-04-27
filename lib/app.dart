@@ -34,6 +34,7 @@ import 'services/backend_provider.dart';
 import 'services/backend_service.dart';
 import 'services/companies_house_provider.dart';
 import 'services/companies_house_service.dart';
+import 'services/formation_state.dart';
 
 /// iOS-style horizontal slide for top-level routes (/signup ↔ /verify).
 CupertinoPage<void> _slidePage(Widget child) => CupertinoPage<void>(
@@ -188,12 +189,14 @@ class QPayApp extends StatelessWidget {
   final AuthService authService;
   final CompaniesHouseService companiesHouseService;
   final BackendService backendService;
+  final FormationState formationState;
 
   const QPayApp({
     super.key,
     required this.authService,
     required this.companiesHouseService,
     required this.backendService,
+    required this.formationState,
   });
 
   @override
@@ -206,7 +209,9 @@ class QPayApp extends StatelessWidget {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
-    return AuthProvider(
+    return FormationProvider(
+      state: formationState,
+      child: AuthProvider(
       service: authService,
       child: CompaniesHouseProvider(
         service: companiesHouseService,
@@ -228,6 +233,7 @@ class QPayApp extends StatelessWidget {
             routerConfig: _router,
           ),
         ),
+      ),
       ),
     );
   }

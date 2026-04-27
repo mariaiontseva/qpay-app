@@ -7,15 +7,18 @@ import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
+import '../../../services/formation_state.dart';
 
 /// A-09 · Company summary. Lives inside [OnboardingShell].
-/// Folds name + SIC + office + articles + auto-config (solo · 100 shares ·
-/// 100% PSC) onto a single review screen. Each row is tappable to edit.
+/// Reads everything from [FormationState] so each row reflects the live
+/// data the user typed earlier. Tapping a row jumps back to the relevant
+/// screen for editing.
 class SummaryScreen extends StatelessWidget {
   const SummaryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final s = FormationProvider.of(context);
     return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
@@ -34,30 +37,30 @@ class SummaryScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: const [
+              children: [
                 _Row(
                   label: 'Company name',
-                  value: 'Orca Design Ltd',
+                  value: s.filedCompanyName,
                   route: '/name',
                 ),
                 _Row(
                   label: 'SIC code',
-                  value: '62012 · Software dev',
+                  value: s.sicSummary,
                   route: '/sic',
                 ),
                 _Row(
                   label: 'Registered office',
-                  value: 'QPay London · 411 Oxford St',
+                  value: s.officeSummary,
                   route: '/registered-office',
                 ),
-                _Row(
+                const _Row(
                   label: 'Articles',
                   value: 'Model · standard',
                   route: '/articles',
                 ),
                 _Row(
                   label: 'Director · shares · PSC',
-                  value: 'You · 100 shares · 100% PSC',
+                  value: s.directorSummary,
                 ),
               ],
             ),

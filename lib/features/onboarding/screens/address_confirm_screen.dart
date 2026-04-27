@@ -8,6 +8,7 @@ import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
 import '../../../services/address_service.dart';
+import '../../../services/formation_state.dart';
 
 /// A-07C · Confirm address.
 /// Final review of the building the user picked. "Use this address" advances
@@ -23,7 +24,10 @@ class AddressConfirmScreen extends StatelessWidget {
       bottom: QBottomBar(
         child: QButton(
           label: 'Use this address',
-          onPressed: () => context.go('/articles'),
+          onPressed: () {
+            FormationProvider.read(context).setOwnAddress(address);
+            context.go('/articles');
+          },
         ),
       ),
       child: Column(

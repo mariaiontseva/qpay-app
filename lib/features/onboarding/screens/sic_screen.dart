@@ -11,6 +11,7 @@ import '../../../design_system/widgets/q_choice_card.dart';
 import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
+import '../../../services/formation_state.dart';
 import '../../../services/sic_service.dart';
 
 /// A-06 · SIC code picker. Lives inside [OnboardingShell].
@@ -44,6 +45,16 @@ class _SicScreenState extends State<SicScreen> {
   void initState() {
     super.initState();
     _searchCtrl.addListener(_onTextChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_selected.isEmpty) {
+      for (final c in FormationProvider.read(context).sicCodes) {
+        _selected[c.code] = c.description;
+      }
+    }
   }
 
   @override
@@ -123,8 +134,16 @@ class _SicScreenState extends State<SicScreen> {
       bottom: QBottomBar(
         child: QButton(
           label: _ctaLabel(),
-          onPressed:
-              canContinue ? () => context.push('/registered-office') : null,
+          onPressed: canContinue
+              ? () {
+                  FormationProvider.read(context).setSicCodes(
+                    _selected.entries
+                        .map((e) => SicCode(e.key, e.value))
+                        .toList(),
+                  );
+                  context.push('/registered-office');
+                }
+              : null,
         ),
       ),
       child: Column(
