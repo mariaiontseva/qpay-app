@@ -70,7 +70,6 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return QScreen(
-      ambient: true,
       bottom: QBottomBar(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -128,10 +127,10 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
       child: Row(
         children: [
-          // Dev shortcut: long-press the wordmark to reset the navigation
-          // stack to the first onboarding screen.
+          // Dev shortcut: long-press the wordmark to jump straight into the
+          // first onboarding step inside the shell, skipping auth.
           GestureDetector(
-            onLongPress: () => context.go('/signup'),
+            onLongPress: () => context.push('/intent'),
             child: Text('QPay', style: QPayType.wordmark),
           ),
           const Spacer(),
