@@ -114,16 +114,16 @@ class _PricingCard extends StatelessWidget {
               Text(
                 '£100',
                 style: QPayType.heroTitle.copyWith(
-                  fontSize: 56,
+                  fontSize: 34,
                   height: 1,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   'one-off',
-                  style: QPayType.heroSub.copyWith(fontSize: 14),
+                  style: QPayType.heroSub.copyWith(fontSize: 13),
                 ),
               ),
             ],

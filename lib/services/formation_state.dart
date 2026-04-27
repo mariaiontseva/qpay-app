@@ -53,6 +53,26 @@ class FormationState extends ChangeNotifier {
   /// File path of the selfie captured on /id-selfie.
   String? selfiePhotoPath;
 
+  // ───── Path B (existing-Ltd onboarding) ─────
+  /// True when the user is onboarding an existing Ltd, not forming one.
+  bool isExistingLtd = false;
+  String existingCompanyNumber = '';
+  String existingIncorporationDate = '';
+  /// Source of funds for the AML question on /existing-aml.
+  String sourceOfFunds = '';
+  /// Expected monthly volume bucket on /existing-aml.
+  String expectedVolume = '';
+  /// PEP self-declaration. False = "No", true = "Yes" (triggers EDD).
+  bool isPep = false;
+  String utr = '';
+  String vatNumber = '';
+
+  /// Whether the QPay business account has been opened. True for Path A
+  /// (set by /live) and after the existing-Ltd banking sub-flow finishes.
+  bool bankAccountOpen = false;
+  /// External bank linked via Open Banking.
+  bool externalBankLinked = false;
+
   // ───── Setters (notify on real changes) ─────
   void setUserName(String v) {
     if (userName == v) return;
@@ -177,6 +197,60 @@ class FormationState extends ChangeNotifier {
 
   void setSelfiePhoto(String path) {
     selfiePhotoPath = path;
+    notifyListeners();
+  }
+
+  void setExistingLtd({
+    required String number,
+    required String name,
+    required String incorporated,
+  }) {
+    isExistingLtd = true;
+    existingCompanyNumber = number;
+    companyName = name;
+    existingIncorporationDate = incorporated;
+    notifyListeners();
+  }
+
+  void setSourceOfFunds(String v) {
+    if (sourceOfFunds == v) return;
+    sourceOfFunds = v;
+    notifyListeners();
+  }
+
+  void setExpectedVolume(String v) {
+    if (expectedVolume == v) return;
+    expectedVolume = v;
+    notifyListeners();
+  }
+
+  void setIsPep(bool v) {
+    if (isPep == v) return;
+    isPep = v;
+    notifyListeners();
+  }
+
+  void setUtr(String v) {
+    if (utr == v) return;
+    utr = v;
+    notifyListeners();
+  }
+
+  void setVatNumber(String v) {
+    if (vatNumber == v) return;
+    vatNumber = v;
+    notifyListeners();
+  }
+
+  void setBankAccountOpen(bool v) {
+    if (bankAccountOpen == v) return;
+    bankAccountOpen = v;
+    notifyListeners();
+  }
+
+  void setExternalBankLinked(bool v) {
+    if (externalBankLinked == v) return;
+    externalBankLinked = v;
     notifyListeners();
   }
 

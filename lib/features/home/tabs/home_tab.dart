@@ -13,6 +13,7 @@ class HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = FormationProvider.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
@@ -21,8 +22,15 @@ class HomeTab extends StatelessWidget {
           children: [
             _PageTitle(companyName: companyName),
             const SizedBox(height: 18),
-            const _AccountCard(),
-            const SizedBox(height: 22),
+            if (s.bankAccountOpen) ...[
+              const _AccountCard(),
+              const SizedBox(height: 22),
+            ] else ...[
+              const _SectionHeader(left: 'BANKING'),
+              const SizedBox(height: 8),
+              const _BankingActions(),
+              const SizedBox(height: 22),
+            ],
             const _SectionHeader(
               left: 'PROFIT & LOSS · YTD',
               right: 'Just opened',
@@ -36,6 +44,101 @@ class HomeTab extends StatelessWidget {
             const SizedBox(height: 22),
             const _ActionGrid(),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BankingActions extends StatelessWidget {
+  const _BankingActions();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _BankingCard(
+          icon: Icons.account_balance_wallet_rounded,
+          title: 'Open QPay business account',
+          subtitle: 'Sort code + account number · £15/mo, first month free',
+          accent: true,
+          onTap: () => context.push('/banking-psc'),
+        ),
+        const SizedBox(height: 10),
+        _BankingCard(
+          icon: Icons.compare_arrows_rounded,
+          title: 'Connect your existing bank',
+          subtitle: 'Read-only via Open Banking · TrueLayer',
+          accent: false,
+          onTap: () => context.push('/banking-connect'),
+        ),
+      ],
+    );
+  }
+}
+
+class _BankingCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool accent;
+  final VoidCallback onTap;
+  const _BankingCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: QPayTokens.cardBase,
+      borderRadius: BorderRadius.circular(QPayTokens.rCard),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(QPayTokens.rCard),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(QPayTokens.rCard),
+            border: Border.all(
+              color: accent ? QPayTokens.accent : QPayTokens.border,
+              width: accent ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: accent ? QPayTokens.accentSoft : QPayTokens.canvas,
+                  borderRadius: BorderRadius.circular(QPayTokens.rMd),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  icon,
+                  color: accent ? QPayTokens.accent : QPayTokens.ink2,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: QPayType.optionTitle),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: QPayType.heroSub),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  color: QPayTokens.ink3, size: 22),
+            ],
+          ),
         ),
       ),
     );

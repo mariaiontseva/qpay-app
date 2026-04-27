@@ -52,7 +52,13 @@ class DirectorDetailsScreen extends StatelessWidget {
         child: QButton(
           label: 'Looks right',
           onPressed: allFilled
-              ? () => context.push(s.isSolo ? '/id-scan' : '/co-directors')
+              ? () => context.push(
+                    // Existing Ltd users skip co-directors — CH already
+                    // has the director list. Path A solo skips it too.
+                    (s.isExistingLtd || s.isSolo)
+                        ? '/id-scan'
+                        : '/co-directors',
+                  )
               : null,
         ),
       ),

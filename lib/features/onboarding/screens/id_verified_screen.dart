@@ -6,6 +6,7 @@ import '../../../design_system/typography.dart';
 import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_screen.dart';
+import '../../../services/formation_state.dart';
 
 /// A-13 · Verified · personal code. Top-level route.
 /// Mock success state — in production the code is returned by the
@@ -19,7 +20,11 @@ class IdVerifiedScreen extends StatelessWidget {
       bottom: QBottomBar(
         child: QButton(
           label: 'Continue',
-          onPressed: () => context.push('/form'),
+          onPressed: () => context.go(
+            FormationProvider.read(context).isExistingLtd
+                ? '/home'
+                : '/form',
+          ),
         ),
       ),
       child: Padding(

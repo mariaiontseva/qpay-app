@@ -36,7 +36,9 @@ class _IntentScreenState extends State<IntentScreen> {
       bottom: QBottomBar(
         child: QButton(
           label: 'Continue',
-          onPressed: () => context.push('/preflight'),
+          onPressed: () => context.push(
+            _selected == 0 ? '/preflight' : '/existing-lookup',
+          ),
         ),
       ),
       child: Column(

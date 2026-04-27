@@ -18,6 +18,10 @@ class LiveScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = FormationProvider.of(context);
+    // Path A: bank account is opened together with the company.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!s.bankAccountOpen) s.setBankAccountOpen(true);
+    });
     final companyName =
         s.filedCompanyName == '—' ? 'Your Company' : s.filedCompanyName;
     final jurisdiction = s.useQPayOffice
@@ -179,12 +183,12 @@ class _CertificateCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             companyName,
-            style: QPayType.heroTitle.copyWith(fontSize: 28, height: 1.05),
+            style: QPayType.heroTitle.copyWith(fontSize: 22, height: 1.1),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             'Companies House · United Kingdom',
-            style: QPayType.heroSub.copyWith(fontSize: 13),
+            style: QPayType.heroSub.copyWith(fontSize: 12.5),
           ),
           const SizedBox(height: 18),
           Container(height: 1, color: QPayTokens.border),
