@@ -10,7 +10,7 @@ import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_edit_sheet.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
-import '../../../design_system/widgets/q_pick_sheet.dart';
+import '../../../design_system/widgets/q_pick_page.dart';
 import '../../../services/countries.dart';
 import '../../../services/formation_state.dart';
 
@@ -93,7 +93,7 @@ class DirectorDetailsScreen extends StatelessWidget {
                   value: nationality,
                   placeholder: 'Tap to choose',
                   onTap: () async {
-                    final c = await showQPickSheet<Country>(
+                    final c = await pushQPickPage<Country>(
                       context,
                       title: 'Nationality',
                       options: kCountries,
@@ -113,7 +113,7 @@ class DirectorDetailsScreen extends StatelessWidget {
                   value: country,
                   placeholder: 'Tap to choose',
                   onTap: () async {
-                    final c = await showQPickSheet<Country>(
+                    final c = await pushQPickPage<Country>(
                       context,
                       title: 'Country of residence',
                       options: kCountries,
