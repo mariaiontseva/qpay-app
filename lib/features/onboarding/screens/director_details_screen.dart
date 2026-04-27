@@ -5,14 +5,15 @@ import '../../../design_system/tokens.dart';
 import '../../../design_system/typography.dart';
 import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
+import '../../../design_system/widgets/q_edit_sheet.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
 import '../../../services/formation_state.dart';
 
 /// A-10 · Director details. Lives inside [OnboardingShell].
-/// Editable card with the minimum legally-required fields per Companies
-/// House. DOB and residential address marked private; service address is
-/// the QPay virtual office by default.
+/// Every row is editable — taps open a single-field bottom sheet that
+/// writes back into [FormationState] on Save. Service address is derived
+/// from the registered office choice and edited via that screen.
 class DirectorDetailsScreen extends StatelessWidget {
   const DirectorDetailsScreen({super.key});
 
@@ -25,6 +26,7 @@ class DirectorDetailsScreen extends StatelessWidget {
         : (s.ownAddress != null
             ? '${s.ownAddress!.line1}, ${s.ownAddress!.locality} ${s.ownAddress!.postcode}'
             : '—');
+
     return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
@@ -44,24 +46,85 @@ class DirectorDetailsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _Field(label: 'Full name', value: fullName),
-                const _Field(
-                  label: 'Date of birth',
-                  value: '12 May 1988',
-                  hint: 'Private',
+                _Field(
+                  label: 'Full name',
+                  value: fullName,
+                  onTap: () async {
+                    final v = await showQEditSheet(
+                      context,
+                      title: 'Full name',
+                      initial: s.userName,
+                      placeholder: 'First and last',
+                    );
+                    if (v != null && v.isNotEmpty) s.setUserName(v);
+                  },
                 ),
-                const _Field(label: 'Nationality', value: 'British'),
-                const _Field(
-                    label: 'Country of residence', value: 'United Kingdom'),
-                const _Field(
-                  label: 'Residential address',
-                  value: "45 King's Rd, London SW3 4UH",
+                _Field(
+                  label: 'Date of birth',
+                  value: s.directorDob,
                   hint: 'Private',
+                  onTap: () async {
+                    final v = await showQEditSheet(
+                      context,
+                      title: 'Date of birth',
+                      initial: s.directorDob,
+                      placeholder: 'DD MMM YYYY',
+                    );
+                    if (v != null && v.isNotEmpty) s.setDirectorDob(v);
+                  },
+                ),
+                _Field(
+                  label: 'Nationality',
+                  value: s.directorNationality,
+                  onTap: () async {
+                    final v = await showQEditSheet(
+                      context,
+                      title: 'Nationality',
+                      initial: s.directorNationality,
+                      placeholder: 'British',
+                    );
+                    if (v != null && v.isNotEmpty) {
+                      s.setDirectorNationality(v);
+                    }
+                  },
+                ),
+                _Field(
+                  label: 'Country of residence',
+                  value: s.directorCountryOfResidence,
+                  onTap: () async {
+                    final v = await showQEditSheet(
+                      context,
+                      title: 'Country of residence',
+                      initial: s.directorCountryOfResidence,
+                      placeholder: 'United Kingdom',
+                    );
+                    if (v != null && v.isNotEmpty) {
+                      s.setDirectorCountryOfResidence(v);
+                    }
+                  },
+                ),
+                _Field(
+                  label: 'Residential address',
+                  value: s.directorResidentialAddress,
+                  hint: 'Private',
+                  onTap: () async {
+                    final v = await showQEditSheet(
+                      context,
+                      title: 'Residential address',
+                      initial: s.directorResidentialAddress,
+                      placeholder: '45 King\'s Rd, London SW3 4UH',
+                      multiline: true,
+                    );
+                    if (v != null && v.isNotEmpty) {
+                      s.setDirectorResidentialAddress(v);
+                    }
+                  },
                 ),
                 _Field(
                   label: 'Service address',
                   value: serviceAddress,
                   hint: 'Public',
+                  onTap: () => context.go('/registered-office'),
                 ),
               ],
             ),
@@ -77,7 +140,13 @@ class _Field extends StatelessWidget {
   final String label;
   final String value;
   final String? hint;
-  const _Field({required this.label, required this.value, this.hint});
+  final VoidCallback onTap;
+  const _Field({
+    required this.label,
+    required this.value,
+    this.hint,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +156,7 @@ class _Field extends StatelessWidget {
         color: QPayTokens.cardBase.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(QPayTokens.rCard),
         child: InkWell(
-          onTap: () {},
+          onTap: onTap,
           borderRadius: BorderRadius.circular(QPayTokens.rCard),
           child: Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),

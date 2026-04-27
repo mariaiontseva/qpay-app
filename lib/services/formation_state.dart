@@ -23,6 +23,19 @@ class FormationState extends ChangeNotifier {
   bool useQPayOffice = true;
   UkAddress? ownAddress;
 
+  // ───── Director (editable on /director-details) ─────
+  /// Defaults are placeholder mock data; user can override every field.
+  String directorDob = '12 May 1988';
+  String directorNationality = 'British';
+  String directorCountryOfResidence = 'United Kingdom';
+  String directorResidentialAddress = "45 King's Rd, London SW3 4UH";
+
+  // ───── ID verification capture ─────
+  /// File path of the document photo captured on /id-scan.
+  String? documentPhotoPath;
+  /// File path of the selfie captured on /id-selfie.
+  String? selfiePhotoPath;
+
   // ───── Setters (notify on real changes) ─────
   void setUserName(String v) {
     if (userName == v) return;
@@ -56,6 +69,40 @@ class FormationState extends ChangeNotifier {
   void setOwnAddress(UkAddress a) {
     useQPayOffice = false;
     ownAddress = a;
+    notifyListeners();
+  }
+
+  void setDirectorDob(String v) {
+    if (directorDob == v) return;
+    directorDob = v;
+    notifyListeners();
+  }
+
+  void setDirectorNationality(String v) {
+    if (directorNationality == v) return;
+    directorNationality = v;
+    notifyListeners();
+  }
+
+  void setDirectorCountryOfResidence(String v) {
+    if (directorCountryOfResidence == v) return;
+    directorCountryOfResidence = v;
+    notifyListeners();
+  }
+
+  void setDirectorResidentialAddress(String v) {
+    if (directorResidentialAddress == v) return;
+    directorResidentialAddress = v;
+    notifyListeners();
+  }
+
+  void setDocumentPhoto(String path) {
+    documentPhotoPath = path;
+    notifyListeners();
+  }
+
+  void setSelfiePhoto(String path) {
+    selfiePhotoPath = path;
     notifyListeners();
   }
 
