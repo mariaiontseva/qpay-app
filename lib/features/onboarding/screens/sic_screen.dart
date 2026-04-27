@@ -1,18 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../design_system/tokens.dart';
+import '../../../design_system/typography.dart';
 import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_choice_card.dart';
 import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
+import '../../../services/sic_service.dart';
 
 /// A-06 · SIC code picker. Lives inside [OnboardingShell].
-/// Natural-language search, AI suggests up to 3 codes, user can multi-select
-/// up to 4. Tag-line above each card switches between accent (SELECTED) and
-/// neutral (SUGGESTED).
+/// Real keyword search across the 731 UK SIC 2007 codes, multi-select up
+/// to 4. Selected codes always show first; remaining slots filled with
+/// search suggestions ranked by token overlap.
 class SicScreen extends StatefulWidget {
   const SicScreen({super.key});
 
@@ -20,40 +24,68 @@ class SicScreen extends StatefulWidget {
   State<SicScreen> createState() => _SicScreenState();
 }
 
-class _SicCode {
-  final String code;
-  final String label;
-  const _SicCode(this.code, this.label);
-}
-
 class _SicScreenState extends State<SicScreen> {
   static const int _maxSelectable = 4;
+  static const Duration _debounce = Duration(milliseconds: 220);
 
-  final TextEditingController _searchCtrl =
-      TextEditingController(text: 'software design');
+  final TextEditingController _searchCtrl = TextEditingController();
+  final SicService _service = SicService();
 
-  // Suggested codes for the current query. In production these come from the
-  // AI mapping endpoint; for now they're static and match the design comp.
-  static const List<_SicCode> _suggestions = [
-    _SicCode('62012', 'Business/domestic software dev'),
-    _SicCode('74100', 'Specialised design activities'),
-    _SicCode('70229', 'Other mgmt consultancy'),
-  ];
+  // Code → description, so we can render selected items even when they fall
+  // outside the current search results.
+  final Map<String, String> _selected = {};
 
-  final Set<String> _selected = {'62012'};
+  Timer? _debounceTimer;
+  int _reqSeq = 0;
+  bool _searching = false;
+  List<SicCode> _results = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl.addListener(_onTextChanged);
+  }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  void _toggle(String code) {
+  void _onTextChanged() {
+    _debounceTimer?.cancel();
+    final q = _searchCtrl.text.trim();
     setState(() {
-      if (_selected.contains(code)) {
-        _selected.remove(code);
+      if (q.isEmpty) {
+        _results = const [];
+        _searching = false;
+      } else {
+        _searching = true;
+      }
+    });
+    if (q.isEmpty) return;
+    _debounceTimer = Timer(_debounce, _runSearch);
+  }
+
+  Future<void> _runSearch() async {
+    final q = _searchCtrl.text.trim();
+    if (q.isEmpty) return;
+    final seq = ++_reqSeq;
+    final res = await _service.search(q, limit: 8);
+    if (!mounted || seq != _reqSeq) return;
+    setState(() {
+      _results = res;
+      _searching = false;
+    });
+  }
+
+  void _toggle(SicCode c) {
+    setState(() {
+      if (_selected.containsKey(c.code)) {
+        _selected.remove(c.code);
       } else if (_selected.length < _maxSelectable) {
-        _selected.add(code);
+        _selected[c.code] = c.description;
       }
     });
   }
@@ -68,6 +100,25 @@ class _SicScreenState extends State<SicScreen> {
   @override
   Widget build(BuildContext context) {
     final canContinue = _selected.isNotEmpty;
+    // Build display list: every selected code first, then any non-selected
+    // search results — capped so the screen stays scrollable but not bloated.
+    final displayed = <_Row>[];
+    for (final entry in _selected.entries) {
+      displayed.add(_Row(
+        code: entry.key,
+        description: entry.value,
+        selected: true,
+      ));
+    }
+    for (final r in _results) {
+      if (_selected.containsKey(r.code)) continue;
+      displayed.add(_Row(
+        code: r.code,
+        description: r.description,
+        selected: false,
+      ));
+    }
+
     return QInnerScreen(
       bottom: QBottomBar(
         child: QButton(
@@ -82,33 +133,61 @@ class _SicScreenState extends State<SicScreen> {
           const QHeader(
             title: 'What will\nyou do?',
             subtitle:
-                'Pick up to 4 SIC codes. We\'ll suggest the most relevant.',
+                'Pick up to 4 SIC codes. Search by what your business does.',
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
             child: QField(
               controller: _searchCtrl,
-              placeholder: 'Describe what you do',
+              placeholder: 'e.g. software, design, consulting',
               prefix: const Icon(
                 Icons.search_rounded,
                 size: 20,
                 color: QPayTokens.ink3,
               ),
-              onChanged: (_) => setState(() {}),
             ),
           ),
           const SizedBox(height: QPayTokens.s5),
-          ..._suggestions.map((s) {
-            final selected = _selected.contains(s.code);
+          if (_searching && _results.isEmpty)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: QPayTokens.ink3,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Text('Searching…',
+                      style: TextStyle(color: QPayTokens.ink3, fontSize: 13)),
+                ],
+              ),
+            ),
+          if (!_searching &&
+              _searchCtrl.text.trim().isNotEmpty &&
+              _results.isEmpty &&
+              displayed.where((r) => !r.selected).isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Text(
+                'No matches. Try a different word.',
+                style: QPayType.optionSub,
+              ),
+            ),
+          ...displayed.map((row) {
             return Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, QPayTokens.s4),
               child: QChoiceCard(
                 tag:
-                    '${selected ? "SELECTED" : "SUGGESTED"}  ·  ${s.code}',
-                tagAccent: selected,
-                title: s.label,
-                selected: selected,
-                onTap: () => _toggle(s.code),
+                    '${row.selected ? "SELECTED" : "MATCH"}  ·  ${row.code}',
+                tagAccent: row.selected,
+                title: row.description,
+                selected: row.selected,
+                onTap: () => _toggle(SicCode(row.code, row.description)),
               ),
             );
           }),
@@ -117,4 +196,15 @@ class _SicScreenState extends State<SicScreen> {
       ),
     );
   }
+}
+
+class _Row {
+  final String code;
+  final String description;
+  final bool selected;
+  const _Row({
+    required this.code,
+    required this.description,
+    required this.selected,
+  });
 }

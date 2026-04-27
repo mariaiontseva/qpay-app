@@ -26,8 +26,7 @@ class NameScreen extends StatefulWidget {
 enum _CheckState { idle, checking, available, taken, error }
 
 class _NameScreenState extends State<NameScreen> {
-  final TextEditingController _ctrl =
-      TextEditingController(text: 'Orca Design');
+  final TextEditingController _ctrl = TextEditingController();
 
   static const Duration _debounce = Duration(milliseconds: 400);
   Timer? _debounceTimer;
