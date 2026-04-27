@@ -7,7 +7,6 @@ import 'design_system/tokens.dart';
 import 'features/onboarding/onboarding_shell.dart';
 import 'features/onboarding/screens/address_confirm_screen.dart';
 import 'features/onboarding/screens/address_manual_screen.dart';
-import 'features/onboarding/screens/address_results_screen.dart';
 import 'features/onboarding/screens/articles_screen.dart';
 import 'features/onboarding/screens/full_name_screen.dart';
 import 'features/onboarding/screens/postcode_screen.dart';
@@ -108,19 +107,6 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/postcode',
           pageBuilder: (_, __) => _innerFade(const PostcodeScreen()),
-        ),
-        GoRoute(
-          path: '/address-results',
-          pageBuilder: (_, state) {
-            final extra = state.extra as Map<String, dynamic>? ?? const {};
-            final postcode = extra['postcode'] as String? ?? '';
-            final addresses =
-                (extra['addresses'] as List<UkAddress>? ?? const <UkAddress>[]);
-            return _innerFade(AddressResultsScreen(
-              postcode: postcode,
-              addresses: addresses,
-            ));
-          },
         ),
         GoRoute(
           path: '/address-confirm',
