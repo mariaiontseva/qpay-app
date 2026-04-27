@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../design_system/tokens.dart';
 import '../../../design_system/typography.dart';
+import '../../../services/auth_provider.dart';
+import '../../../services/formation_state.dart';
 
 /// Home tab content — fresh business account, all numbers at zero.
 class HomeTab extends StatelessWidget {
@@ -45,6 +48,9 @@ class _PageTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = FormationProvider.of(context);
+    final auth = AuthProvider.of(context);
+    final name = (auth.currentName ?? s.userName).trim();
     return Row(
       children: [
         Expanded(
@@ -57,23 +63,40 @@ class _PageTitle extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: QPayTokens.cardBase,
-            borderRadius: BorderRadius.circular(QPayTokens.rMd),
-            border: Border.all(color: QPayTokens.border, width: 1),
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.notifications_none_rounded,
-            color: QPayTokens.ink2,
-            size: 18,
+        Material(
+          color: QPayTokens.cardBase,
+          borderRadius: BorderRadius.circular(QPayTokens.rPill),
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: () => context.push('/profile'),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: QPayTokens.border, width: 1),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                _initials(name),
+                style: QPayType.optionTitle.copyWith(
+                  fontSize: 13,
+                  color: QPayTokens.ink,
+                ),
+              ),
+            ),
           ),
         ),
       ],
     );
+  }
+
+  static String _initials(String name) {
+    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '·';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
   }
 }
 

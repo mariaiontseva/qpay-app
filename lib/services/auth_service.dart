@@ -58,4 +58,24 @@ class AuthService {
       ),
     );
   }
+
+  /// Clear the Supabase session.
+  Future<void> signOut() async {
+    if (_client == null) return;
+    await _client.auth.signOut();
+  }
+
+  /// Self-serve account deletion. The Supabase anon client cannot delete
+  /// a user — that needs a privileged backend call (qpay-backend +
+  /// service-role key). For the prototype we sign the user out so the
+  /// UX works end-to-end.
+  Future<void> deleteAccount() async {
+    if (_client == null) return;
+    // TODO: POST /account/delete (qpay-backend) once that endpoint is up.
+    await _client.auth.signOut();
+  }
+
+  String? get currentEmail => _client?.auth.currentUser?.email;
+  String? get currentName =>
+      _client?.auth.currentUser?.userMetadata?['name'] as String?;
 }

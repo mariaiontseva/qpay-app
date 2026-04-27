@@ -20,8 +20,16 @@ import '../../../services/auth_provider.dart';
 class VerifyOtpScreen extends StatefulWidget {
   final String email;
   final String name;
+  /// True when the OTP was triggered from /signin — returning users skip
+  /// the formation chain and land on /home.
+  final bool returning;
 
-  const VerifyOtpScreen({super.key, required this.email, this.name = ''});
+  const VerifyOtpScreen({
+    super.key,
+    required this.email,
+    this.name = '',
+    this.returning = false,
+  });
 
   @override
   State<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -85,7 +93,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
         } catch (_) {}
       }
       if (!mounted) return;
-      context.go('/intent');
+      context.go(widget.returning ? '/home' : '/intent');
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);

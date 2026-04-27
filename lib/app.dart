@@ -8,6 +8,7 @@ import 'features/onboarding/onboarding_shell.dart';
 import 'features/onboarding/screens/address_confirm_screen.dart';
 import 'features/onboarding/screens/address_manual_screen.dart';
 import 'features/home/home_shell.dart';
+import 'features/home/profile_screen.dart';
 import 'features/onboarding/screens/articles_screen.dart';
 import 'features/onboarding/screens/co_directors_screen.dart';
 import 'features/onboarding/screens/director_details_screen.dart';
@@ -75,6 +76,7 @@ final GoRouter _router = GoRouter(
           VerifyOtpScreen(
             email: extra['email'] ?? '',
             name: extra['name'] ?? '',
+            returning: extra['returning'] == 'true',
           ),
         );
       },
@@ -113,6 +115,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/home',
       pageBuilder: (_, __) => _slidePage(const HomeShell()),
+    ),
+    GoRoute(
+      path: '/profile',
+      pageBuilder: (_, __) => _slidePage(const ProfileScreen()),
     ),
     // Persistent onboarding chrome (back arrow + progress bar) wraps the
     // A-02…A-05 screens. `NoTransitionPage` keeps the shell in place while

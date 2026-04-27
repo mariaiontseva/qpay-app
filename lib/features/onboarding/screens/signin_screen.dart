@@ -52,7 +52,8 @@ class _SignInScreenState extends State<SignInScreen> {
     try {
       await AuthProvider.of(context).sendOtp(email);
       if (!mounted) return;
-      context.push('/verify', extra: <String, String>{'email': email});
+      context.push('/verify',
+          extra: <String, String>{'email': email, 'returning': 'true'});
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = '${e.statusCode ?? ''} ${e.message}'.trim());
