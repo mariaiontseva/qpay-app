@@ -90,41 +90,39 @@ class _PricingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       decoration: BoxDecoration(
-        color: QPayTokens.cardBase,
-        borderRadius: BorderRadius.circular(QPayTokens.rCard + 4),
+        color: QPayTokens.cardBase.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(QPayTokens.rCard),
         border: Border.all(color: QPayTokens.border, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'TODAY',
-            style: QPayType.fieldLabel.copyWith(
-              color: QPayTokens.ink3,
-              fontSize: 10.5,
-              letterSpacing: 1.4,
-            ),
-          ),
-          const SizedBox(height: 4),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '£100',
-                style: QPayType.heroTitle.copyWith(
-                  fontSize: 34,
-                  height: 1,
+                'TODAY',
+                style: QPayType.fieldLabel.copyWith(
+                  color: QPayTokens.ink3,
+                  fontSize: 10.5,
+                  letterSpacing: 1.4,
                 ),
               ),
-              const SizedBox(width: 8),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  'one-off',
-                  style: QPayType.heroSub.copyWith(fontSize: 13),
+              const Spacer(),
+              Text(
+                '£100',
+                style: QPayType.optionTitle.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
                 ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'one-off',
+                style: QPayType.heroSub.copyWith(fontSize: 12),
               ),
             ],
           ),

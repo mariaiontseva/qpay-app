@@ -25,10 +25,14 @@ class HomeTab extends StatelessWidget {
             if (s.bankAccountOpen) ...[
               const _AccountCard(),
               const SizedBox(height: 22),
-            ] else ...[
+            ],
+            if (!s.bankAccountOpen || !s.externalBankLinked) ...[
               const _SectionHeader(left: 'BANKING'),
               const SizedBox(height: 8),
-              const _BankingActions(),
+              _BankingActions(
+                showOpenAccount: !s.bankAccountOpen,
+                showConnectBank: !s.externalBankLinked,
+              ),
               const SizedBox(height: 22),
             ],
             const _SectionHeader(
@@ -51,27 +55,35 @@ class HomeTab extends StatelessWidget {
 }
 
 class _BankingActions extends StatelessWidget {
-  const _BankingActions();
+  final bool showOpenAccount;
+  final bool showConnectBank;
+
+  const _BankingActions({
+    required this.showOpenAccount,
+    required this.showConnectBank,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _BankingCard(
-          icon: Icons.account_balance_wallet_rounded,
-          title: 'Open QPay business account',
-          subtitle: 'Sort code + account number · £15/mo, first month free',
-          accent: true,
-          onTap: () => context.push('/banking-psc'),
-        ),
-        const SizedBox(height: 10),
-        _BankingCard(
-          icon: Icons.compare_arrows_rounded,
-          title: 'Connect your existing bank',
-          subtitle: 'Read-only via Open Banking · TrueLayer',
-          accent: false,
-          onTap: () => context.push('/banking-connect'),
-        ),
+        if (showOpenAccount)
+          _BankingCard(
+            icon: Icons.account_balance_wallet_rounded,
+            title: 'Open QPay business account',
+            subtitle: 'Sort code + account number · £15/mo, first month free',
+            accent: true,
+            onTap: () => context.push('/banking-psc'),
+          ),
+        if (showOpenAccount && showConnectBank) const SizedBox(height: 10),
+        if (showConnectBank)
+          _BankingCard(
+            icon: Icons.compare_arrows_rounded,
+            title: 'Connect your existing bank',
+            subtitle: 'Read-only via Open Banking · TrueLayer',
+            accent: false,
+            onTap: () => context.push('/banking-connect'),
+          ),
       ],
     );
   }
