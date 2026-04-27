@@ -8,6 +8,7 @@ import '../../design_system/widgets/q_button.dart';
 import '../../design_system/widgets/q_screen.dart';
 import '../../services/auth_provider.dart';
 import '../../services/formation_state.dart';
+import '../../services/postcode_service.dart';
 
 /// Account / profile screen reachable from the avatar icon on the Home
 /// tab. Shows the current user + company on top, then sign-out and a
