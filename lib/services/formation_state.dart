@@ -58,6 +58,10 @@ class FormationState extends ChangeNotifier {
   bool isExistingLtd = false;
   String existingCompanyNumber = '';
   String existingIncorporationDate = '';
+  String existingStatus = '';
+  String existingJurisdiction = '';
+  String existingRegisteredOffice = '';
+  List<String> existingSicCodes = const [];
   /// Source of funds for the AML question on /existing-aml.
   String sourceOfFunds = '';
   /// Expected monthly volume bucket on /existing-aml.
@@ -204,11 +208,19 @@ class FormationState extends ChangeNotifier {
     required String number,
     required String name,
     required String incorporated,
+    String status = '',
+    String jurisdiction = '',
+    String registeredOffice = '',
+    List<String> sicCodes = const [],
   }) {
     isExistingLtd = true;
     existingCompanyNumber = number;
     companyName = name;
     existingIncorporationDate = incorporated;
+    existingStatus = status;
+    existingJurisdiction = jurisdiction;
+    existingRegisteredOffice = registeredOffice;
+    existingSicCodes = List.unmodifiable(sicCodes);
     notifyListeners();
   }
 

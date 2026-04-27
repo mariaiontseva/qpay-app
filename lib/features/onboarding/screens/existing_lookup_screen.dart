@@ -10,12 +10,13 @@ import '../../../design_system/widgets/q_field.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_screen.dart';
 import '../../../services/companies_house_provider.dart';
+import '../../../services/companies_house_service.dart';
 import '../../../services/formation_state.dart';
 
 /// B-01 · Existing-Ltd company-number lookup.
-/// Single eight-digit input. Hits the Companies House Public Data API
-/// (already wired up in CompaniesHouseService) to verify the company
-/// exists and is active before letting the user advance.
+/// Hits the Companies House public-data API directly via
+/// CompaniesHouseService.lookupByNumber, persists the real record
+/// (name, status, incorporation, office, SICs) into FormationState.
 class ExistingLookupScreen extends StatefulWidget {
   const ExistingLookupScreen({super.key});
 
@@ -28,7 +29,7 @@ enum _LookupState { idle, checking, found, dissolved, notFound, error }
 class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
   final _ctrl = TextEditingController();
   _LookupState _state = _LookupState.idle;
-  String? _foundName;
+  CompanyDetails? _details;
   String? _err;
 
   @override
@@ -43,30 +44,38 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
     setState(() {
       _state = _LookupState.checking;
       _err = null;
+      _details = null;
     });
     try {
-      // Reuse the existing CH search API by querying for the number —
-      // the public data API treats the number as a search term.
-      final res = await CompaniesHouseProvider.of(context)
-          .checkAvailability(number);
-      // checkAvailability returns "available" if no match, so we just
-      // mock a successful lookup for the prototype.
+      final d =
+          await CompaniesHouseProvider.of(context).lookupByNumber(number);
       if (!mounted) return;
-      // Prototype: always treat as found with a canned name.
-      _foundName = 'Orca Design Ltd';
+      if (d.status == 'dissolved' ||
+          d.status == 'liquidation' ||
+          d.status == 'removed') {
+        setState(() {
+          _details = d;
+          _state = _LookupState.dissolved;
+        });
+        return;
+      }
+      _details = d;
       setState(() => _state = _LookupState.found);
-      // Persist into state and advance.
       FormationProvider.read(context).setExistingLtd(
-        number: number,
-        name: _foundName!,
-        incorporated: '3 Mar 2024',
+        number: d.number,
+        name: d.name,
+        incorporated: d.incorporatedLabel,
+        status: d.status,
+        jurisdiction: d.jurisdictionLabel,
+        registeredOffice: d.registeredOffice,
+        sicCodes: d.sicCodes,
       );
       if (!mounted) return;
       context.push('/existing-confirm');
-      // Suppress unused warning on the local res variable.
-      // ignore: unused_local_variable
-      final _ = res;
-    } catch (e) {
+    } on CompanyNotFoundException {
+      if (!mounted) return;
+      setState(() => _state = _LookupState.notFound);
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _state = _LookupState.error;
@@ -108,6 +117,7 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
               onChanged: (_) => setState(() {
                 _state = _LookupState.idle;
                 _err = null;
+                _details = null;
               }),
             ),
           ),
@@ -117,7 +127,7 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
               height: 22,
               child: _Status(
                 state: _state,
-                foundName: _foundName,
+                details: _details,
                 err: _err,
               ),
             ),
@@ -131,9 +141,9 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
 
 class _Status extends StatelessWidget {
   final _LookupState state;
-  final String? foundName;
+  final CompanyDetails? details;
   final String? err;
-  const _Status({required this.state, this.foundName, this.err});
+  const _Status({required this.state, this.details, this.err});
 
   @override
   Widget build(BuildContext context) {
@@ -167,11 +177,13 @@ class _Status extends StatelessWidget {
                   children: [
                     const TextSpan(text: 'Active · '),
                     TextSpan(
-                      text: foundName ?? 'company found',
+                      text: details?.name ?? 'company found',
                       style: QPayType.statusLineStrong,
                     ),
                   ],
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -183,7 +195,7 @@ class _Status extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'This company is dissolved. Pick another or form a new one.',
+                '${details?.name ?? "This company"} is ${details?.status}.',
                 style: QPayType.statusLine,
               ),
             ),

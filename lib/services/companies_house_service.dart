@@ -2,6 +2,69 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+/// Companies House public-data record for a single company.
+class CompanyDetails {
+  final String number;
+  final String name;
+  /// One of: active, dissolved, liquidation, removed, …
+  final String status;
+  /// ISO date of incorporation, e.g. "2024-07-15".
+  final String? incorporated;
+  /// Jurisdiction tag from CH (e.g. "england-wales", "scotland").
+  final String? jurisdiction;
+  final List<String> sicCodes;
+  /// Single-line registered-office address.
+  final String registeredOffice;
+
+  const CompanyDetails({
+    required this.number,
+    required this.name,
+    required this.status,
+    this.incorporated,
+    this.jurisdiction,
+    this.sicCodes = const [],
+    this.registeredOffice = '',
+  });
+
+  /// Human-readable incorporation date, e.g. "15 Jul 2024".
+  String get incorporatedLabel {
+    final raw = incorporated;
+    if (raw == null) return '';
+    final parts = raw.split('-');
+    if (parts.length != 3) return raw;
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final m = int.tryParse(parts[1]);
+    if (m == null || m < 1 || m > 12) return raw;
+    return '${int.parse(parts[2])} ${months[m - 1]} ${parts[0]}';
+  }
+
+  String get jurisdictionLabel {
+    switch (jurisdiction) {
+      case 'england-wales':
+        return 'England and Wales';
+      case 'scotland':
+        return 'Scotland';
+      case 'northern-ireland':
+        return 'Northern Ireland';
+      case null:
+      case '':
+        return '';
+      default:
+        return jurisdiction!;
+    }
+  }
+}
+
+class CompanyNotFoundException implements Exception {
+  final String message;
+  const CompanyNotFoundException([this.message = 'Company not found.']);
+  @override
+  String toString() => message;
+}
+
 /// Result of a name-availability check against the Companies House register.
 class NameAvailability {
   /// True when no active company exactly matches the proposed name.
@@ -110,6 +173,63 @@ class CompaniesHouseService {
     // reusable.
     const reusable = {'removed'};
     return !reusable.contains(status);
+  }
+
+  /// Direct profile lookup by company number. Returns the public-data
+  /// record. Throws [CompanyNotFoundException] on 404, generic
+  /// [CompaniesHouseException] on other non-200 responses.
+  Future<CompanyDetails> lookupByNumber(String number) async {
+    final n = number.trim();
+    if (!isLive) {
+      // Mock — no API key. Return a reasonable shape so the UI flow
+      // works in dev without burning real lookups.
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      return CompanyDetails(
+        number: n,
+        name: 'Demo Company Ltd',
+        status: 'active',
+        incorporated: '2024-01-01',
+        jurisdiction: 'england-wales',
+        sicCodes: const ['62012'],
+        registeredOffice: 'Demo Address, London, SW1A 1AA',
+      );
+    }
+    final uri = Uri.parse('$_base/company/$n');
+    final auth = 'Basic ${base64Encode(utf8.encode('$_apiKey:'))}';
+    final res = await _client.get(
+      uri,
+      headers: {'Authorization': auth, 'Accept': 'application/json'},
+    );
+    if (res.statusCode == 404) throw const CompanyNotFoundException();
+    if (res.statusCode != 200) {
+      throw CompaniesHouseException(
+        'Companies House returned ${res.statusCode}',
+      );
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    final addr = (body['registered_office_address'] as Map<String, dynamic>?
+            ?? const {})
+        .cast<String, dynamic>();
+    final addressParts = [
+      addr['premises'],
+      addr['address_line_1'],
+      addr['address_line_2'],
+      addr['locality'],
+      addr['region'],
+      addr['postal_code'],
+    ].whereType<String>().where((s) => s.trim().isNotEmpty).toList();
+
+    return CompanyDetails(
+      number: n,
+      name: (body['company_name'] as String? ?? '').trim(),
+      status: (body['company_status'] as String? ?? '').trim(),
+      incorporated: body['date_of_creation'] as String?,
+      jurisdiction: body['jurisdiction'] as String?,
+      sicCodes:
+          (body['sic_codes'] as List<dynamic>? ?? const <dynamic>[])
+              .cast<String>(),
+      registeredOffice: addressParts.join(', '),
+    );
   }
 
   void dispose() => _client.close();

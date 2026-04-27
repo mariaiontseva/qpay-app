@@ -38,33 +38,34 @@ class ExistingConfirmScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _Row(
-                    label: 'Name',
-                    value: s.companyName.isEmpty
-                        ? 'Orca Design Ltd'
-                        : s.companyName),
+                _Row(label: 'Name', value: s.companyName),
                 _Row(
                   label: 'Number · Status',
-                  value: '${s.existingCompanyNumber} · Active',
+                  value:
+                      '${s.existingCompanyNumber} · ${_titleCase(s.existingStatus)}',
                   mono: true,
                 ),
-                _Row(
-                  label: 'Incorporated',
-                  value: s.existingIncorporationDate.isEmpty
-                      ? '3 Mar 2024'
-                      : s.existingIncorporationDate,
-                ),
-                const _Row(
-                  label: 'Registered office',
-                  value: "45 King's Rd, London SW3 4UH",
-                ),
-                const _Row(label: 'SIC', value: '62012 · Software dev'),
-                _Row(
-                  label: 'Director on file',
-                  value: s.userName.trim().isEmpty
-                      ? 'You'
-                      : '${s.userName.trim()} (you)',
-                ),
+                if (s.existingIncorporationDate.isNotEmpty)
+                  _Row(
+                    label: 'Incorporated',
+                    value: s.existingIncorporationDate,
+                  ),
+                if (s.existingJurisdiction.isNotEmpty)
+                  _Row(
+                    label: 'Jurisdiction',
+                    value: s.existingJurisdiction,
+                  ),
+                if (s.existingRegisteredOffice.isNotEmpty)
+                  _Row(
+                    label: 'Registered office',
+                    value: s.existingRegisteredOffice,
+                  ),
+                if (s.existingSicCodes.isNotEmpty)
+                  _Row(
+                    label:
+                        'SIC code${s.existingSicCodes.length == 1 ? '' : 's'}',
+                    value: s.existingSicCodes.join(', '),
+                  ),
               ],
             ),
           ),
@@ -83,6 +84,11 @@ class ExistingConfirmScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+String _titleCase(String s) {
+  if (s.isEmpty) return s;
+  return s[0].toUpperCase() + s.substring(1);
 }
 
 class _Row extends StatelessWidget {
