@@ -5,13 +5,17 @@ import 'package:go_router/go_router.dart';
 
 import 'design_system/tokens.dart';
 import 'features/onboarding/onboarding_shell.dart';
+import 'features/onboarding/screens/address_confirm_screen.dart';
+import 'features/onboarding/screens/address_results_screen.dart';
 import 'features/onboarding/screens/articles_screen.dart';
 import 'features/onboarding/screens/full_name_screen.dart';
+import 'features/onboarding/screens/postcode_screen.dart';
 import 'features/onboarding/screens/intent_screen.dart';
 import 'features/onboarding/screens/name_screen.dart';
 import 'features/onboarding/screens/preflight_screen.dart';
 import 'features/onboarding/screens/registered_office_screen.dart';
 import 'features/onboarding/screens/sic_screen.dart';
+import 'services/address_service.dart';
 import 'features/onboarding/screens/signin_screen.dart';
 import 'features/onboarding/screens/signup_screen.dart';
 import 'features/onboarding/screens/solo_screen.dart';
@@ -99,6 +103,34 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/registered-office',
           pageBuilder: (_, __) => _innerFade(const RegisteredOfficeScreen()),
+        ),
+        GoRoute(
+          path: '/postcode',
+          pageBuilder: (_, __) => _innerFade(const PostcodeScreen()),
+        ),
+        GoRoute(
+          path: '/address-results',
+          pageBuilder: (_, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? const {};
+            final postcode = extra['postcode'] as String? ?? '';
+            final addresses =
+                (extra['addresses'] as List<UkAddress>? ?? const <UkAddress>[]);
+            return _innerFade(AddressResultsScreen(
+              postcode: postcode,
+              addresses: addresses,
+            ));
+          },
+        ),
+        GoRoute(
+          path: '/address-confirm',
+          pageBuilder: (_, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? const {};
+            final address = extra['address'] as UkAddress?;
+            if (address == null) {
+              return _innerFade(const PostcodeScreen());
+            }
+            return _innerFade(AddressConfirmScreen(address: address));
+          },
         ),
         GoRoute(
           path: '/articles',

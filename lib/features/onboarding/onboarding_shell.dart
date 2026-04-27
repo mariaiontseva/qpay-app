@@ -29,6 +29,9 @@ class OnboardingShell extends StatelessWidget {
     '/name': 4,
     '/sic': 5,
     '/registered-office': 6,
+    '/postcode': 6,
+    '/address-results': 6,
+    '/address-confirm': 6,
     '/articles': 7,
   };
 
