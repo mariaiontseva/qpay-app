@@ -14,7 +14,6 @@ import 'features/banking/banking_psc_screen.dart';
 import 'features/banking/open_banking_screen.dart';
 import 'features/home/home_shell.dart';
 import 'features/home/profile_screen.dart';
-import 'features/onboarding/screens/existing_confirm_screen.dart';
 import 'features/onboarding/screens/existing_lookup_screen.dart';
 import 'features/onboarding/screens/articles_screen.dart';
 import 'features/onboarding/screens/co_directors_screen.dart';
@@ -130,10 +129,6 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/existing-lookup',
       pageBuilder: (_, __) => _slidePage(const ExistingLookupScreen()),
-    ),
-    GoRoute(
-      path: '/existing-confirm',
-      pageBuilder: (_, __) => _slidePage(const ExistingConfirmScreen()),
     ),
     GoRoute(
       path: '/banking-psc',

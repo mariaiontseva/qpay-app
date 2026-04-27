@@ -15,11 +15,10 @@ import '../../../services/companies_house_provider.dart';
 import '../../../services/companies_house_service.dart';
 import '../../../services/formation_state.dart';
 
-/// B-01 · Existing-Ltd company-number lookup.
-/// As soon as the user types eight digits we hit the Companies House
-/// public-data API and render a preview card with the real record
-/// underneath the input. Continue only fires once the user has
-/// reviewed the preview.
+/// Existing-Ltd company lookup, preview, and confirm — all on one screen.
+/// Replaces the old two-step (B-01 lookup + B-02 confirm) sequence.
+/// User types eight digits, the CH record renders below in a single
+/// review card, and "Yes, it's me" advances straight to /director-details.
 class ExistingLookupScreen extends StatefulWidget {
   const ExistingLookupScreen({super.key});
 
@@ -104,7 +103,7 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
       registeredOffice: d.registeredOffice,
       sicCodes: d.sicCodes,
     );
-    context.push('/existing-confirm');
+    context.go('/director-details');
   }
 
   @override
@@ -113,13 +112,14 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
     return QScreen(
       bottom: QBottomBar(
         child: QButton(
-          label: 'Continue',
+          label: "Yes, it's me",
           onPressed: canContinue ? _onContinue : null,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _BackBar(),
           const QHeader(
             title: "What's the\ncompany number?",
             subtitle:
@@ -139,7 +139,7 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
             child: _PreviewArea(
               state: _state,
               details: _details,
@@ -147,6 +147,35 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
             ),
           ),
           const SizedBox(height: QPayTokens.s6),
+        ],
+      ),
+    );
+  }
+}
+
+class _BackBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(QPayTokens.s5, 10, QPayTokens.s6, 0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(QPayTokens.rMd),
+                onTap: () => context.pop(),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: QPayTokens.ink,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -243,21 +272,38 @@ class _PreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = blocked ? QPayTokens.alert : QPayTokens.success;
     final statusBg = blocked ? QPayTokens.alertBg : QPayTokens.successBg;
+
+    final stats = <_Stat>[
+      if (details.incorporatedLabel.isNotEmpty)
+        _Stat(label: 'Incorporated', value: details.incorporatedLabel),
+      if (details.jurisdictionLabel.isNotEmpty)
+        _Stat(label: 'Jurisdiction', value: details.jurisdictionLabel),
+      if (details.registeredOffice.isNotEmpty)
+        _Stat(label: 'Registered office', value: details.registeredOffice),
+      if (details.sicCodes.isNotEmpty)
+        _Stat(
+          label: 'SIC code${details.sicCodes.length == 1 ? '' : 's'}',
+          value: details.sicCodes.join(', '),
+          mono: true,
+        ),
+    ];
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       decoration: BoxDecoration(
         color: QPayTokens.cardBase,
-        borderRadius: BorderRadius.circular(QPayTokens.rCard),
+        borderRadius: BorderRadius.circular(QPayTokens.rCard + 4),
         border: Border.all(color: QPayTokens.border, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ───── Status pill + number ─────
           Row(
             children: [
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: statusBg,
                   borderRadius: BorderRadius.circular(QPayTokens.rPill),
@@ -278,32 +324,34 @@ class _PreviewCard extends StatelessWidget {
                 style: QPayType.progressNum.copyWith(
                   color: QPayTokens.ink3,
                   fontSize: 12,
+                  letterSpacing: 1.1,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(details.name, style: QPayType.optionTitle),
-          if (details.incorporatedLabel.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Incorporated ${details.incorporatedLabel}'
-              '${details.jurisdictionLabel.isEmpty ? '' : ' · ${details.jurisdictionLabel}'}',
-              style: QPayType.heroSub,
-            ),
-          ],
-          if (details.registeredOffice.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              details.registeredOffice,
-              style: QPayType.heroSub.copyWith(fontSize: 12.5),
-            ),
+          const SizedBox(height: 12),
+          Text(details.name, style: QPayType.heroTitle.copyWith(fontSize: 22)),
+          if (stats.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Container(height: 1, color: QPayTokens.border),
+            const SizedBox(height: 12),
+            for (var i = 0; i < stats.length; i++) ...[
+              stats[i],
+              if (i != stats.length - 1) const SizedBox(height: 12),
+            ],
           ],
           if (blocked) ...[
-            const SizedBox(height: 10),
-            Text(
-              'This company is ${details.status}. Pick another or form a new one.',
-              style: QPayType.heroSub.copyWith(color: QPayTokens.alert),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              decoration: BoxDecoration(
+                color: QPayTokens.alertBg,
+                borderRadius: BorderRadius.circular(QPayTokens.rCard),
+              ),
+              child: Text(
+                'This company is ${details.status}. Pick another or form a new one.',
+                style: QPayType.heroSub.copyWith(color: QPayTokens.alert),
+              ),
             ),
           ],
         ],
@@ -314,5 +362,43 @@ class _PreviewCard extends StatelessWidget {
   static String _statusLabel(String status) {
     if (status.isEmpty) return '';
     return status[0].toUpperCase() + status.substring(1);
+  }
+}
+
+class _Stat extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool mono;
+  const _Stat({
+    required this.label,
+    required this.value,
+    this.mono = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 110,
+          child: Text(
+            label,
+            style: QPayType.fieldLabel,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: (mono ? QPayType.progressNum : QPayType.optionTitle)
+                .copyWith(
+              color: QPayTokens.ink,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
