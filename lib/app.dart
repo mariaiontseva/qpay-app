@@ -8,7 +8,7 @@ import 'features/onboarding/onboarding_shell.dart';
 import 'features/onboarding/screens/address_confirm_screen.dart';
 import 'features/onboarding/screens/address_manual_screen.dart';
 import 'features/onboarding/screens/articles_screen.dart';
-import 'features/onboarding/screens/full_name_screen.dart';
+import 'features/onboarding/screens/email_screen.dart';
 import 'features/onboarding/screens/postcode_screen.dart';
 import 'features/onboarding/screens/intent_screen.dart';
 import 'features/onboarding/screens/name_screen.dart';
@@ -69,8 +69,11 @@ final GoRouter _router = GoRouter(
       },
     ),
     GoRoute(
-      path: '/full-name',
-      pageBuilder: (_, __) => _slidePage(const FullNameScreen()),
+      path: '/email',
+      pageBuilder: (_, state) {
+        final extra = state.extra as Map<String, String>? ?? const {};
+        return _slidePage(EmailScreen(name: extra['name'] ?? ''));
+      },
     ),
     // Persistent onboarding chrome (back arrow + progress bar) wraps the
     // A-02…A-05 screens. `NoTransitionPage` keeps the shell in place while

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../design_system/tokens.dart';
 import '../../../design_system/typography.dart';
 import '../../../design_system/widgets/q_bottom_bar.dart';
 import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_field.dart';
+import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_screen.dart';
-import '../../../services/auth_provider.dart';
 
-/// A-01 · Sign up for QPay.
-/// Name, email, +44 mobile. CTA calls Supabase phone OTP and navigates to
-/// the verification screen.
+/// A-01 · Sign up step 1: full name.
+/// One question per screen — the QHeader carries the prompt, the QField
+/// has no label so the page reads like a single question.
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -22,117 +22,60 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _name = TextEditingController();
-  final _email = TextEditingController();
-
-  static final _emailRe = RegExp(r'^[\w.\-+]+@[\w\-]+\.[\w\-.]+$');
-
-  bool _busy = false;
-  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _name.addListener(_onChanged);
-    _email.addListener(_onChanged);
+    _name.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _name.dispose();
-    _email.dispose();
     super.dispose();
   }
 
-  void _onChanged() => setState(() => _error = null);
-
-  bool get _nameOk {
+  bool get _ok {
     final s = _name.text.trim();
     if (s.length < 2) return false;
-    // At least two whitespace-separated tokens — "first last".
     return s.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).length >= 2;
   }
 
-  bool get _emailOk => _emailRe.hasMatch(_email.text.trim());
-  bool get _allValid => _nameOk && _emailOk && !_busy;
-
-  Future<void> _sendCode() async {
-    if (!_allValid) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    final email = _email.text.trim();
-    final name = _name.text.trim();
-    try {
-      await AuthProvider.of(context).sendOtp(email);
-      if (!mounted) return;
-      context.push('/verify',
-          extra: <String, String>{'email': email, 'name': name});
-    } on AuthException catch (e) {
-      if (!mounted) return;
-      setState(() => _error = '${e.statusCode ?? ''} ${e.message}'.trim());
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _error = 'Network or unknown error: $e');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+  void _onContinue() {
+    if (!_ok) return;
+    context.push('/email', extra: {'name': _name.text.trim()});
   }
 
   @override
   Widget build(BuildContext context) {
     return QScreen(
       bottom: QBottomBar(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            QButton(
-              label: _busy ? 'Sending…' : 'Send verification code',
-              onPressed: _allValid ? _sendCode : null,
-            ),
-            const SizedBox(height: QPayTokens.s4),
-            const Center(child: _TermsFooter()),
-          ],
+        child: QButton(
+          label: 'Continue',
+          onPressed: _ok ? _onContinue : null,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _TopBar(),
-          const _Hero(),
+          const QHeader(
+            title: "What's your\nname?",
+            subtitle:
+                'Your full name goes on company paperwork, so make it official.',
+            topPadding: 32,
+          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
             child: QField(
-              label: 'NAME',
               controller: _name,
               placeholder: 'First and last',
               autofillHint: AutofillHints.name,
               keyboardType: TextInputType.name,
+              autofocus: true,
+              inputFormatters: [LengthLimitingTextInputFormatter(64)],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-            child: QField(
-              label: 'EMAIL',
-              controller: _email,
-              placeholder: 'you@example.com',
-              hint: "We'll email you an 8-digit code",
-              autofillHint: AutofillHints.email,
-              keyboardType: TextInputType.emailAddress,
-            ),
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-              child: Text(
-                _error!,
-                style: QPayType.heroSub.copyWith(
-                  color: QPayTokens.alert,
-                  fontSize: 13,
-                ),
-              ),
-            ),
           const SizedBox(height: QPayTokens.s6),
         ],
       ),
@@ -172,49 +115,6 @@ class _TopBar extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Hero extends StatelessWidget {
-  const _Hero();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Business banking, next level.', style: QPayType.heroTitle),
-          const SizedBox(height: QPayTokens.s3),
-          Text(
-            'Form your Ltd and open your account in one go.',
-            style: QPayType.heroSub,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TermsFooter extends StatelessWidget {
-  const _TermsFooter();
-
-  @override
-  Widget build(BuildContext context) {
-    return Text.rich(
-      TextSpan(
-        style: QPayType.termsFooter,
-        children: [
-          const TextSpan(text: "By continuing you agree to QPay's "),
-          TextSpan(text: 'Terms', style: QPayType.termsFooterStrong),
-          const TextSpan(text: ' & '),
-          TextSpan(text: 'Privacy', style: QPayType.termsFooterStrong),
-          const TextSpan(text: '.'),
-        ],
-      ),
-      textAlign: TextAlign.center,
     );
   }
 }
