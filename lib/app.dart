@@ -8,6 +8,7 @@ import 'features/onboarding/onboarding_shell.dart';
 import 'features/onboarding/screens/address_confirm_screen.dart';
 import 'features/onboarding/screens/address_manual_screen.dart';
 import 'features/onboarding/screens/articles_screen.dart';
+import 'features/onboarding/screens/co_directors_screen.dart';
 import 'features/onboarding/screens/director_details_screen.dart';
 import 'features/onboarding/screens/email_screen.dart';
 import 'features/onboarding/screens/filing_screen.dart';
@@ -179,6 +180,10 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/director-details',
           pageBuilder: (_, __) => _innerFade(const DirectorDetailsScreen()),
+        ),
+        GoRoute(
+          path: '/co-directors',
+          pageBuilder: (_, __) => _innerFade(const CoDirectorsScreen()),
         ),
       ],
     ),

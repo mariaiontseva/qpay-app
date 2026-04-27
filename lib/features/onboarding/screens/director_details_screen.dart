@@ -51,7 +51,9 @@ class DirectorDetailsScreen extends StatelessWidget {
       bottom: QBottomBar(
         child: QButton(
           label: 'Looks right',
-          onPressed: allFilled ? () => context.push('/id-scan') : null,
+          onPressed: allFilled
+              ? () => context.push(s.isSolo ? '/id-scan' : '/co-directors')
+              : null,
         ),
       ),
       child: Column(

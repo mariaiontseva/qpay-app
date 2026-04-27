@@ -23,6 +23,14 @@ class FormationState extends ChangeNotifier {
   bool useQPayOffice = true;
   UkAddress? ownAddress;
 
+  // ───── Team (A-04 + /co-directors) ─────
+  /// True when the founder is incorporating alone. Set on /solo.
+  bool isSolo = true;
+  /// Invited co-directors. Each will receive an email with a deep link
+  /// into QPay where they do their own signup + ID verification before
+  /// the IN01 can be filed.
+  List<CoDirector> coDirectors = const [];
+
   // ───── Director (editable on /director-details) ─────
   /// All fields start empty — the only auto-filled identity data is the
   /// `userName` captured at signup. Everything else needs the user to enter
@@ -72,6 +80,32 @@ class FormationState extends ChangeNotifier {
     useQPayOffice = false;
     ownAddress = a;
     notifyListeners();
+  }
+
+  void setIsSolo(bool v) {
+    if (isSolo == v) return;
+    isSolo = v;
+    if (v) coDirectors = const [];
+    notifyListeners();
+  }
+
+  void addCoDirector(CoDirector d) {
+    coDirectors = List.unmodifiable([...coDirectors, d]);
+    notifyListeners();
+  }
+
+  void removeCoDirector(String email) {
+    coDirectors = List.unmodifiable(
+      coDirectors.where((d) => d.email != email),
+    );
+    notifyListeners();
+  }
+
+  /// Equal share percentages: founder + co-directors all share equally.
+  /// Returns the percentage rounded down so totals never exceed 100%.
+  int get equalSharePercent {
+    final n = 1 + coDirectors.length;
+    return (100 / n).floor();
   }
 
   void setDirectorDob(DateTime? v) {
@@ -145,9 +179,31 @@ class FormationState extends ChangeNotifier {
 
   String get directorSummary {
     final n = userName.trim();
-    if (n.isEmpty) return 'You · 100 shares · 100% PSC';
-    return '$n · 100 shares · 100% PSC';
+    if (isSolo) {
+      if (n.isEmpty) return 'You · 100 shares · 100% PSC';
+      return '$n · 100 shares · 100% PSC';
+    }
+    final total = 1 + coDirectors.length;
+    final pct = equalSharePercent;
+    return '$n + ${coDirectors.length} co-director${coDirectors.length == 1 ? '' : 's'} · '
+        '$total × $pct% shares';
   }
+}
+
+/// Invited co-director.
+class CoDirector {
+  final String name;
+  final String email;
+  /// Verification status — until they finish their own ID flow this stays
+  /// "pending". Mocked in the prototype; in production a webhook from
+  /// Stripe Identity flips it to "verified".
+  final String status;
+
+  const CoDirector({
+    required this.name,
+    required this.email,
+    this.status = 'pending',
+  });
 }
 
 /// InheritedNotifier so descendants get rebuilt when state changes.

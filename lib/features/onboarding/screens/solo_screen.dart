@@ -7,6 +7,7 @@ import '../../../design_system/widgets/q_button.dart';
 import '../../../design_system/widgets/q_choice_card.dart';
 import '../../../design_system/widgets/q_header.dart';
 import '../../../design_system/widgets/q_inner_screen.dart';
+import '../../../services/formation_state.dart';
 
 /// A-04 · Solo or team? Lives inside [OnboardingShell].
 class SoloScreen extends StatefulWidget {
@@ -29,6 +30,15 @@ class _SoloScreenState extends State<SoloScreen> {
   ];
 
   int _selected = 0;
+  bool _initialised = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialised) return;
+    _initialised = true;
+    _selected = FormationProvider.read(context).isSolo ? 0 : 1;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +46,10 @@ class _SoloScreenState extends State<SoloScreen> {
       bottom: QBottomBar(
         child: QButton(
           label: 'Continue',
-          onPressed: () => context.push('/name'),
+          onPressed: () {
+            FormationProvider.read(context).setIsSolo(_selected == 0);
+            context.push('/name');
+          },
         ),
       ),
       child: Column(
