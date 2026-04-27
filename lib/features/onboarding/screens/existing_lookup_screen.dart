@@ -38,6 +38,10 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
   _LookupState _state = _LookupState.idle;
   CompanyDetails? _details;
   String? _err;
+  /// Number for which we already auto-dismissed the keyboard. We don't
+  /// dismiss again when the user edits and lands back on the same number,
+  /// otherwise mid-edit dismisses make further typing painful.
+  String? _dismissedFor;
 
   @override
   void initState() {
@@ -79,8 +83,13 @@ class _ExistingLookupScreenState extends State<ExistingLookupScreen> {
           d.status == 'removed';
       setState(() => _state =
           blocked ? _LookupState.blocked : _LookupState.found);
-      // Drop the keyboard so the preview card is fully visible.
-      FocusManager.instance.primaryFocus?.unfocus();
+      // Dismiss keyboard the first time we find a given number, so the
+      // user can see the full card. Re-edits that land back on the same
+      // number do NOT re-dismiss — keeps mid-edit typing usable.
+      if (!blocked && number != _dismissedFor) {
+        FocusManager.instance.primaryFocus?.unfocus();
+        _dismissedFor = number;
+      }
     } on CompanyNotFoundException {
       if (!mounted || s != _seq) return;
       setState(() => _state = _LookupState.notFound);
