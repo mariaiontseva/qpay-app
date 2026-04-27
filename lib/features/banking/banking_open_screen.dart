@@ -5,19 +5,19 @@ import '../../design_system/tokens.dart';
 import '../../design_system/typography.dart';
 import '../../design_system/widgets/q_bottom_bar.dart';
 import '../../design_system/widgets/q_button.dart';
+import '../../design_system/widgets/q_progress_bar.dart';
 import '../../design_system/widgets/q_screen.dart';
 import '../../services/formation_state.dart';
 
 /// Final step of the existing-Ltd "Open business account" flow.
-/// Lights up sort code + account number, marks the banking flow complete
-/// in FormationState, returns to /home.
+/// Welcome moment with sort code + account number; flips
+/// FormationState.bankAccountOpen on entry, returns to /home.
 class BankingOpenScreen extends StatelessWidget {
   const BankingOpenScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final s = FormationProvider.of(context);
-    // Mark banking complete the first time we land here.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!s.bankAccountOpen) s.setBankAccountOpen(true);
     });
@@ -28,46 +28,58 @@ class BankingOpenScreen extends StatelessWidget {
           onPressed: () => context.go('/home'),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(28, 60, 28, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: QPayTokens.successBg,
-                  shape: BoxShape.circle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          QProgressBar(
+            step: 4,
+            total: 4,
+            onBack: () => context.pop(),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome to QPay.',
+                  style: QPayType.heroTitle,
                 ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: QPayTokens.success,
-                  size: 38,
+                const SizedBox(height: 8),
+                Text(
+                  'Sort code + account number are ready. Funded balance: £0.',
+                  style: QPayType.heroSub,
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          Center(
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: QPayTokens.successBg,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.check_rounded,
+                color: QPayTokens.success,
+                size: 38,
               ),
             ),
-            const SizedBox(height: 22),
-            Text(
-              'Your business\naccount is open.',
-              textAlign: TextAlign.center,
-              style: QPayType.heroTitle.copyWith(fontSize: 28),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Sort code + account number are ready. Funded balance: £0.',
-              textAlign: TextAlign.center,
-              style: QPayType.heroSub,
-            ),
-            const SizedBox(height: 24),
-            const _DetailsCard(
+          ),
+          const SizedBox(height: 24),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: _DetailsCard(
               sortCode: '04-00-04',
               accountNumber: '12345678',
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: QPayTokens.s6),
+        ],
       ),
     );
   }
@@ -104,16 +116,16 @@ class _DetailsCard extends StatelessWidget {
   Widget _row(String label, String value) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(label, style: QPayType.fieldLabel),
-          ),
+          Text(label, style: QPayType.fieldLabel),
+          const SizedBox(height: 4),
           Text(
             value,
             style: QPayType.progressNum.copyWith(
               color: QPayTokens.ink,
-              fontSize: 16,
+              fontSize: 18,
               letterSpacing: 1.2,
             ),
           ),
